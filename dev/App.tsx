@@ -6,7 +6,7 @@ import {
   RegistryContext,
   defaultRegistry,
 } from '../src'
-import { Show, Suspense, createSignal } from 'solid-js'
+import { For, Show, Suspense, createSignal } from 'solid-js'
 import * as Todos from './Todos'
 import { getIdRx } from './worker/client'
 import { Counter } from './Counter'
@@ -16,17 +16,17 @@ export default function App() {
     <RegistryContext.Provider value={defaultRegistry}>
       <Counter />
       {/* <WorkerWrap /> */}
-      {/* <h3>Stream list</h3> */}
+      <h3>Stream list</h3>
       <Suspense fallback={<p>Loading...</p>}>
         <TodoStreamList />
       </Suspense>
       <PullButton />
-      {/* <br /> */}
-      {/* <PerPageSelect /> */}
-      {/* <h3>Effect list</h3>
+      <br />
+      <PerPageSelect />
+      <h3>Effect list</h3>
       <Suspense fallback={<p>Loading...</p>}>
         <TodoEffectList />
-      </Suspense> */}
+      </Suspense>
     </RegistryContext.Provider>
   )
 }
@@ -72,20 +72,41 @@ const PullButton = () => {
   )
 }
 
+const PerPageSelect2 = () => {
+  const [n, setN] = createSignal(5)
+
+  return (
+    <label>
+      Per page:
+      <select
+        value={n()}
+        onChange={e => {
+          const value = parseInt(e.currentTarget.value, 10)
+          console.log('selected:', value)
+          setN(value)
+        }}
+      >
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="55">55</option>
+      </select>
+    </label>
+  )
+}
+
 const PerPageSelect = () => {
   const [n, set] = useRx(Todos.perPage)
   return (
-    <>
-      <label>
-        Per page:
-        <select value={n()} onChange={e => set(Number(e.target.value))}>
-          <option value={5}>5</option>
-          <option value={10}>10</option>
-          <option value={20}>20</option>
-          <option value={55}>55</option>
-        </select>
-      </label>
-    </>
+    <label>
+      Per page:
+      <select value={n()} onChange={e => set(Number(e.target.value))}>
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="55">55</option>
+      </select>
+    </label>
   )
 }
 
