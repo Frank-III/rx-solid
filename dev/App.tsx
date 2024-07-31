@@ -15,7 +15,7 @@ export default function App() {
   return (
     <RegistryContext.Provider value={defaultRegistry}>
       <Counter />
-      {/* <WorkerWrap /> */}
+      <WorkerWrap />
       <h3>Stream list</h3>
       <Suspense fallback={<p>Loading...</p>}>
         <TodoStreamList />
