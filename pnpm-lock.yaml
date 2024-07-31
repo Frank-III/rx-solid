@@ -7,10 +7,32 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@effect-rx/rx':
+        specifier: ^0.33.8
+        version: 0.33.8(effect@3.5.8)
+      effect:
+        specifier: ^3.5.8
+        version: 3.5.8
+      scheduler:
+        specifier: ^0.23.2
+        version: 0.23.2
     devDependencies:
+      '@effect/platform':
+        specifier: ^0.60.2
+        version: 0.60.2(@effect/schema@0.69.2(effect@3.5.8))(effect@3.5.8)
+      '@effect/platform-browser':
+        specifier: ^0.39.2
+        version: 0.39.2(@effect/platform@0.60.2(@effect/schema@0.69.2(effect@3.5.8))(effect@3.5.8))(effect@3.5.8)
+      '@effect/schema':
+        specifier: ^0.69.2
+        version: 0.69.2(effect@3.5.8)
       '@types/node':
         specifier: ^20.12.12
         version: 20.12.12
+      '@types/scheduler':
+        specifier: ^0.23.0
+        version: 0.23.0
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.9.0
         version: 7.9.0(@typescript-eslint/parser@7.9.0(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)
@@ -225,6 +247,28 @@ packages:
   '@babel/types@7.24.5':
     resolution: {integrity: sha512-6mQNsaLeXTw0nxYUYu+NSa4Hx4BlF1x1x8/PMFbiR+GBSr+2DkECc69b8hgy2frEodNcvPffeH8YfWd3LI6jhQ==}
     engines: {node: '>=6.9.0'}
+
+  '@effect-rx/rx@0.33.8':
+    resolution: {integrity: sha512-dZZW2BbXNRcvNB37tdjWzCZQpz6D+xPaZcaFusQImvwMzMNhqzVHQa9a8V7r8+fZrgzY1nJpM2HypdfGSsjAng==}
+    peerDependencies:
+      effect: ^3.0.5
+
+  '@effect/platform-browser@0.39.2':
+    resolution: {integrity: sha512-/zkbTsRJJABVy2kU2eW8dcBBEFsG93nJmCphvfGTvWzj0j/T+dG2+934H6GOlfOWjgWP8wlS8ZWZ2pn0Wt1Jrg==}
+    peerDependencies:
+      '@effect/platform': ^0.60.2
+      effect: ^3.5.8
+
+  '@effect/platform@0.60.2':
+    resolution: {integrity: sha512-k8hW6r1WAmwZmvUmjMFVE+UQj8pKwbBFmUWcxa4X7MaTmkp9JKP0KdtKlz2A3pgTszPwdWNAbqGWwro/Ow1j3A==}
+    peerDependencies:
+      '@effect/schema': ^0.69.2
+      effect: ^3.5.8
+
+  '@effect/schema@0.69.2':
+    resolution: {integrity: sha512-giyj+VX9k5PIzS5QVnmDyKwJe92X2dr4WhckDBWsIZilblSG2xH0J+JMKdBYZAsU0tONZIYtlm11xB4uOMsqMQ==}
+    peerDependencies:
+      effect: ^3.5.8
 
   '@esbuild/aix-ppc64@0.19.12':
     resolution: {integrity: sha512-bmoCYyWdEL3wDQIVbcyzRyeKLgk2WtWLTWz1ZIAZF/EGbNOwSA6ew3PftJ1PqMiOOGu0OyFMzG53L0zqIpPeNA==}
@@ -812,6 +856,9 @@ packages:
   '@types/node@20.12.12':
     resolution: {integrity: sha512-eWLDGF/FOSPtAvEqeRAQ4C8LSA7M1I7i0ky1I8U7kD1J5ITyW3AsRhQrKVoWf5pFKZ2kILsEGJhsI9r93PYnOw==}
 
+  '@types/scheduler@0.23.0':
+    resolution: {integrity: sha512-YIoDCTH3Af6XM5VuwGG/QL/CJqga1Zm3NkU3HZ4ZHK2fRMPYP1VczsTUqtsf43PH/iJNVlPHAo2oWX7BSdB2Hw==}
+
   '@typescript-eslint/eslint-plugin@7.9.0':
     resolution: {integrity: sha512-6e+X0X3sFe/G/54aC3jt0txuMTURqLyekmEHViqyA2VnxhLMpvA6nqmcjIy+Cr9tLDHPssA74BP5Mx9HQIxBEA==}
     engines: {node: ^18.18.0 || >=20.0.0}
@@ -1117,6 +1164,9 @@ packages:
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
+  effect@3.5.8:
+    resolution: {integrity: sha512-gGrRH3BgsUrfOXx4vbD4puRS+/IyK7JiERhuKnjVYurTVDj3J+lPI7raJB9/AAKr59SGEiV7+Sy59/Q/Vfo5mQ==}
+
   electron-to-chromium@1.4.773:
     resolution: {integrity: sha512-87eHF+h3PlCRwbxVEAw9KtK3v7lWfc/sUDr0W76955AdYTG4bV/k0zrl585Qnj/skRMH2qOSiE+kqMeOQ+LOpw==}
 
@@ -1223,6 +1273,10 @@ packages:
     resolution: {integrity: sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg==}
     engines: {node: '>=16.17'}
 
+  fast-check@3.20.0:
+    resolution: {integrity: sha512-pZIjqLpOZgdSLecec4GKC3Zq5702MZ34upMKxojnNVSWA0K64V3pXOBT1Wdsrc3AphLtzRBbsi8bRWF4TUGmUg==}
+    engines: {node: '>=8.0.0'}
+
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
@@ -1246,6 +1300,9 @@ packages:
   fill-range@7.0.1:
     resolution: {integrity: sha512-qOo9F+dMUmC2Lcb4BbVvnKJxTPjCm+RRpe4gDuGrzkL7mEVl/djYSu2OdQ2Pa302N4oqkSg9ir6jaLWJ2USVpQ==}
     engines: {node: '>=8'}
+
+  find-my-way-ts@0.1.5:
+    resolution: {integrity: sha512-4GOTMrpGQVzsCH2ruUn2vmwzV/02zF4q+ybhCIrw/Rkt3L8KWcycdC6aJMctJzwN4fXD4SD5F/4B9Sksh5rE0A==}
 
   find-up@5.0.0:
     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
@@ -1500,6 +1557,10 @@ packages:
   lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
 
+  loose-envify@1.4.0:
+    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
+    hasBin: true
+
   loupe@2.3.7:
     resolution: {integrity: sha512-zSMINGVYkdpYSOBmLi0D1Uo7JU9nVdQKrHxC8eYlV+9YKK9WePqAlL7lSlorG/U2Fw1w0hTBmaa/jrQ3UbPHtA==}
 
@@ -1560,6 +1621,9 @@ packages:
 
   ms@2.1.2:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
+
+  multipasta@0.2.2:
+    resolution: {integrity: sha512-KKGdmXIJUmt9BV45LsbUdMnju8eCNSyF9KpbyqK2E3wQXjpPQOg52/Hc+nsmBacmEkNxLVT5h1y3ZgEXB4prXg==}
 
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
@@ -1708,6 +1772,9 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
+  pure-rand@6.1.0:
+    resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
+
   querystringify@2.2.0:
     resolution: {integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==}
 
@@ -1767,6 +1834,9 @@ packages:
   saxes@6.0.0:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
     engines: {node: '>=v12.22.7'}
+
+  scheduler@0.23.2:
+    resolution: {integrity: sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==}
 
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
@@ -2397,6 +2467,28 @@ snapshots:
       '@babel/helper-validator-identifier': 7.24.5
       to-fast-properties: 2.0.0
 
+  '@effect-rx/rx@0.33.8(effect@3.5.8)':
+    dependencies:
+      effect: 3.5.8
+
+  '@effect/platform-browser@0.39.2(@effect/platform@0.60.2(@effect/schema@0.69.2(effect@3.5.8))(effect@3.5.8))(effect@3.5.8)':
+    dependencies:
+      '@effect/platform': 0.60.2(@effect/schema@0.69.2(effect@3.5.8))(effect@3.5.8)
+      effect: 3.5.8
+      multipasta: 0.2.2
+
+  '@effect/platform@0.60.2(@effect/schema@0.69.2(effect@3.5.8))(effect@3.5.8)':
+    dependencies:
+      '@effect/schema': 0.69.2(effect@3.5.8)
+      effect: 3.5.8
+      find-my-way-ts: 0.1.5
+      multipasta: 0.2.2
+
+  '@effect/schema@0.69.2(effect@3.5.8)':
+    dependencies:
+      effect: 3.5.8
+      fast-check: 3.20.0
+
   '@esbuild/aix-ppc64@0.19.12':
     optional: true
 
@@ -2761,6 +2853,8 @@ snapshots:
     dependencies:
       undici-types: 5.26.5
 
+  '@types/scheduler@0.23.0': {}
+
   '@typescript-eslint/eslint-plugin@7.9.0(@typescript-eslint/parser@7.9.0(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)':
     dependencies:
       '@eslint-community/regexpp': 4.10.0
@@ -3100,6 +3194,8 @@ snapshots:
 
   eastasianwidth@0.2.0: {}
 
+  effect@3.5.8: {}
+
   electron-to-chromium@1.4.773: {}
 
   emoji-regex@8.0.0: {}
@@ -3316,6 +3412,10 @@ snapshots:
       signal-exit: 4.1.0
       strip-final-newline: 3.0.0
 
+  fast-check@3.20.0:
+    dependencies:
+      pure-rand: 6.1.0
+
   fast-deep-equal@3.1.3: {}
 
   fast-glob@3.3.2:
@@ -3341,6 +3441,8 @@ snapshots:
   fill-range@7.0.1:
     dependencies:
       to-regex-range: 5.0.1
+
+  find-my-way-ts@0.1.5: {}
 
   find-up@5.0.0:
     dependencies:
@@ -3581,6 +3683,10 @@ snapshots:
 
   lodash@4.17.21: {}
 
+  loose-envify@1.4.0:
+    dependencies:
+      js-tokens: 4.0.0
+
   loupe@2.3.7:
     dependencies:
       get-func-name: 2.0.2
@@ -3636,6 +3742,8 @@ snapshots:
       ufo: 1.5.3
 
   ms@2.1.2: {}
+
+  multipasta@0.2.2: {}
 
   mz@2.7.0:
     dependencies:
@@ -3762,6 +3870,8 @@ snapshots:
 
   punycode@2.3.1: {}
 
+  pure-rand@6.1.0: {}
+
   querystringify@2.2.0: {}
 
   queue-microtask@1.2.3: {}
@@ -3825,6 +3935,10 @@ snapshots:
   saxes@6.0.0:
     dependencies:
       xmlchars: 2.2.0
+
+  scheduler@0.23.2:
+    dependencies:
+      loose-envify: 1.4.0
 
   semver@6.3.1: {}
 

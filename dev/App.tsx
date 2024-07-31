@@ -1,30 +1,107 @@
-import type { Component } from 'solid-js'
-import logo from './logo.svg'
-import styles from './App.module.css'
-import { Hello } from 'src'
+import {
+  useRx,
+  useRxSet,
+  useRxSuspense,
+  useRxValue,
+  RegistryContext,
+  defaultRegistry,
+} from '../src'
+import { Show, Suspense, createSignal } from 'solid-js'
+import * as Todos from './Todos'
+import { getIdRx } from './worker/client'
+import { Counter } from './Counter'
 
-const App: Component = () => {
+export default function App() {
   return (
-    <div class={styles.App}>
-      <header class={styles.header}>
-        <img src={logo} class={styles.logo} alt="logo" />
-        <h1>
-          <Hello></Hello>
-        </h1>
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          class={styles.link}
-          href="https://github.com/solidjs/solid"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Solid
-        </a>
-      </header>
+    <RegistryContext.Provider value={defaultRegistry}>
+      <Counter />
+      {/* <WorkerWrap /> */}
+      {/* <h3>Stream list</h3> */}
+      <Suspense fallback={<p>Loading...</p>}>
+        <TodoStreamList />
+      </Suspense>
+      <PullButton />
+      {/* <br /> */}
+      {/* <PerPageSelect /> */}
+      {/* <h3>Effect list</h3>
+      <Suspense fallback={<p>Loading...</p>}>
+        <TodoEffectList />
+      </Suspense> */}
+    </RegistryContext.Provider>
+  )
+}
+
+const TodoStreamList = () => {
+  const result = useRxSuspense(Todos.stream)
+  return (
+    <Show when={result()?._tag === 'Success'}>
+      <div style={{ 'text-align': 'left' }}>
+        {result().value.items.map(todo => (
+          <Todo key={todo.id} todo={todo} />
+        ))}
+      </div>
+    </Show>
+  )
+}
+
+const TodoEffectList = () => {
+  const todos = useRxSuspense(Todos.effect)
+  return (
+    <div style={{ 'text-align': 'left' }}>
+      {todos()?.value.map(todo => <Todo key={todo.id} todo={todo} />)}
     </div>
   )
 }
 
-export default App
+function Todo({ todo }: { readonly todo: Todos.Todo }) {
+  return (
+    <p>
+      <input checked={todo.completed} type="checkbox" disabled />
+      &nbsp;{todo.title}
+    </p>
+  )
+}
+
+const PullButton = () => {
+  const pull = useRxSet(Todos.stream)
+  const done = useRxValue(Todos.streamIsDone)
+  return (
+    <button onClick={() => pull()} disabled={done()}>
+      Pull more
+    </button>
+  )
+}
+
+const PerPageSelect = () => {
+  const [n, set] = useRx(Todos.perPage)
+  return (
+    <>
+      <label>
+        Per page:
+        <select value={n()} onChange={e => set(Number(e.target.value))}>
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+          <option value={55}>55</option>
+        </select>
+      </label>
+    </>
+  )
+}
+
+function WorkerWrap() {
+  const [mount, setMount] = createSignal(false)
+  return (
+    <>
+      <button onClick={() => setMount(_ => !_)}>{mount() ? 'Stop' : 'Start'} worker</button>
+      <Show when={mount()}>
+        <WorkerButton />
+      </Show>
+    </>
+  )
+}
+
+function WorkerButton() {
+  const getById = useRxSet(getIdRx)
+  return <button onClick={() => getById('123')}>Get ID from worker</button>
+}
