@@ -1,36 +1,36 @@
 <p>
-  <img width="100%" src="https://assets.solidjs.com/banner?type={{name_of_lib}}&background=tiles&project=%20" alt="{{name_of_lib}}">
+  <img width="100%" src="https://assets.solidjs.com/banner?type=rx-solid&background=tiles&project=%20" alt="rx-solid">
 </p>
 
-# {{name_of_lib}}
+# rx-solid
 
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
 
-{{desc_of_lib}}
+effect-rx for solid
 
-> **Note** After using this template, you have to search and replace all `{{name_of_lib}}` and similar strings
+> **Note** After using this template, you have to search and replace all `rx-solid` and similar strings
 > with appropriate texts.
 >
-> `{{name_of_lib}}` should be a **kebab-case** string representing the name of you monorepo.
+> `rx-solid` should be a **kebab-case** string representing the name of you monorepo.
 >
-> `{{desc_of_lib}}` should be a **Normal case** string with the description of the repository.
+> `effect-rx for solid` should be a **Normal case** string with the description of the repository.
 >
-> `{{me}}` should be a **kebab-case** string from your profile URL.
+> `frank-iii` should be a **kebab-case** string from your profile URL.
 
 ## Quick start
 
 Install it:
 
 ```bash
-npm i {{name_of_lib}}
+npm i rx-solid
 # or
-yarn add {{name_of_lib}}
+yarn add rx-solid
 # or
-pnpm add {{name_of_lib}}
+pnpm add rx-solid
 ```
 
 Use it:
 
 ```tsx
-import {{name_of_lib}} from '{{name_of_lib}}'
+import rx-solid from 'rx-solid'
 ```

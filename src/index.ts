@@ -173,10 +173,6 @@ export const useRxRef = <A>(rxRef: RxRef.ReadonlyRef<A>): Accessor<A> => {
 //   return resultRx
 // }
 
-// /**
-//  * @since 1.0.0
-//  * @category hooks
-//  */
 // export const useRxSuspense = <A, E>(
 //   rx: Rx.Rx<Result.Result<A, E>>,
 //   options?: { readonly suspendOnWaiting?: boolean }

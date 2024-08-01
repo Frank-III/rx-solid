@@ -1,17 +1,17 @@
 {
   "name": "rx-solid",
   "version": "0.0.0",
-  "description": "{{desc_of_lib}}",
+  "description": "effect-rx for solid",
   "license": "MIT",
-  "author": "{{me}}",
+  "author": "frank-iii",
   "contributors": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/{{me}}/{{name_of_lib}}.git"
+    "url": "git+https://github.com/frank-iii/rx-solid.git"
   },
-  "homepage": "https://github.com/{{me}}/{{name_of_lib}}#readme",
+  "homepage": "https://github.com/frank-iii/rx-solid#readme",
   "bugs": {
-    "url": "https://github.com/{{me}}/{{name_of_lib}}/issues"
+    "url": "https://github.com/frank-iii/rx-solid/issues"
   },
   "files": [
     "dist"
@@ -24,10 +24,6 @@
   "types": "./dist/index.d.ts",
   "browser": {},
   "exports": {
-    "solid": {
-      "development": "./dist/dev.jsx",
-      "import": "./dist/index.jsx"
-    },
     "development": {
       "import": {
         "types": "./dist/index.d.ts",
