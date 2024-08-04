@@ -6,8 +6,8 @@ import {
   createEffect,
   Accessor,
   createResource,
-  Resource,
-  createMemo,
+  // Resource,
+  // createMemo,
 } from 'solid-js'
 import * as Registry from '@effect-rx/rx/Registry'
 import * as Rx from '@effect-rx/rx/Rx'
@@ -62,16 +62,21 @@ export const useRx = <R, W>(rx: Rx.Writable<R, W>): [Accessor<R>, (newValue: W) 
   return [value, set]
 }
 
-export const useRxValue = <A>(rx: Rx.Rx<A>): Accessor<A> => {
+export const useRxValue: {
+  <A>(rx: Rx.Rx<A>): Accessor<A>
+  <A, B>(rx: Rx.Rx<A>, f: (_: A) => B): Accessor<B>
+} = <A>(rx: Rx.Rx<A>, f?: (_: A) => A): Accessor<A> => {
   const registry = injectRegistry()
   const [value, setValue] = createSignal<A>(registry.get(rx))
+  const derivedVal = f ? () => f(value()): value
 
   createEffect(() => {
+    // set value here would also change the derived value
     const cancel = registry.subscribe(rx, setValue as (newValue: A) => void)
     onCleanup(cancel)
   })
 
-  return value
+  return derivedVal
 }
 
 // Hook to set values on an Rx.Writable
