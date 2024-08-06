@@ -34,22 +34,39 @@ export default function App() {
 const TodoStreamList = () => {
   const result = useRxSuspense(Todos.stream)
   return (
-    <Show when={result()?._tag === 'Success'}>
-      <div style={{ 'text-align': 'left' }}>
-        {result().value.items.map(todo => (
-          <Todo key={todo.id} todo={todo} />
-        ))}
-      </div>
-    </Show>
+    <>
+      <Show
+        when={(() => {
+          const res = result()
+          return res?._tag === 'Success' && res
+        })()}
+      >
+        {res => (
+          <div style={{ 'text-align': 'left' }}>
+            <For each={res().value.items}>{todo => <Todo todo={todo} />}</For>
+          </div>
+        )}
+      </Show>
+      <p>{result()?.waiting ? 'Waiting' : 'Loaded'}</p>
+    </>
   )
 }
 
 const TodoEffectList = () => {
   const todos = useRxSuspense(Todos.effect)
   return (
-    <div style={{ 'text-align': 'left' }}>
-      {todos()?.value.map(todo => <Todo key={todo.id} todo={todo} />)}
-    </div>
+    <Show
+      when={(() => {
+        const res = todos()
+        return res?._tag === 'Success' && res
+      })()}
+    >
+      {res => (
+        <div style={{ 'text-align': 'left' }}>
+          <For each={res().value}>{todo => <Todo todo={todo} />}</For>
+        </div>
+      )}
+    </Show>
   )
 }
 
@@ -69,29 +86,6 @@ const PullButton = () => {
     <button onClick={() => pull()} disabled={done()}>
       Pull more
     </button>
-  )
-}
-
-const PerPageSelect2 = () => {
-  const [n, setN] = createSignal(5)
-
-  return (
-    <label>
-      Per page:
-      <select
-        value={n()}
-        onChange={e => {
-          const value = parseInt(e.currentTarget.value, 10)
-          console.log('selected:', value)
-          setN(value)
-        }}
-      >
-        <option value="5">5</option>
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="55">55</option>
-      </select>
-    </label>
   )
 }
 

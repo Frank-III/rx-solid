@@ -21,6 +21,7 @@ export * as Result from '@effect-rx/rx/Result'
 export * as Rx from '@effect-rx/rx/Rx'
 export * as RxRef from '@effect-rx/rx/RxRef'
 import * as Scheduler from 'scheduler'
+import { createDeepSignal } from './extra'
 
 // Context for Registry
 export const RegistryContext = createContext<Registry.Registry>()
@@ -50,7 +51,7 @@ export const injectRegistry = (): Registry.Registry => {
 // Hook to use an Rx.Writable, similar to useRx in Vue
 export const useRx = <R, W>(rx: Rx.Writable<R, W>): [Accessor<R>, (newValue: W) => void] => {
   const registry = injectRegistry()
-  const [value, setValue] = createSignal<R>(registry.get(rx))
+  const [value, setValue] = createDeepSignal<R>(registry.get(rx))
 
   createEffect(() => {
     const cancel = registry.subscribe(rx, setValue as (newValue: R) => void)
@@ -67,7 +68,7 @@ export const useRxValue: {
   <A, B>(rx: Rx.Rx<A>, f: (_: A) => B): Accessor<B>
 } = <A>(rx: Rx.Rx<A>, f?: (_: A) => A): Accessor<A> => {
   const registry = injectRegistry()
-  const [value, setValue] = createSignal<A>(registry.get(rx))
+  const [value, setValue] = createDeepSignal<A>(registry.get(rx))
   const derivedVal = f ? () => f(value()): value
 
   createEffect(() => {
@@ -80,19 +81,23 @@ export const useRxValue: {
 }
 
 // Hook to set values on an Rx.Writable
-export const useRxSet = <R, W>(rx: Rx.Writable<R, W>): ((newValue: W) => void) => {
+export const useRxSet = <R, W>(rx: Rx.Writable<R, W>): (_: W | ((_: R) => W)) => void => {
   const registry = injectRegistry()
   createEffect(() => {
     const cancel = registry.mount(rx)
     onCleanup(cancel)
   })
 
-  return (newValue: W) => registry.set(rx, newValue)
+  return (newValue: W | ((_: R) => W)) => {
+    if (typeof newValue === 'function') {
+        return registry.set(rx, (newValue as any)(registry.get(rx)))}
+    return registry.set(rx, newValue)
+  }
 }
 
 // Hook to use an RxRef
 export const useRxRef = <A>(rxRef: RxRef.ReadonlyRef<A>): Accessor<A> => {
-  const [value, setValue] = createSignal<A>(rxRef.value)
+  const [value, setValue] = createDeepSignal<A>(rxRef.value)
 
   createEffect(() => {
     const cancel = rxRef.subscribe(setValue as (newValue: A) => void)
@@ -101,105 +106,6 @@ export const useRxRef = <A>(rxRef: RxRef.ReadonlyRef<A>): Accessor<A> => {
 
   return value
 }
-
-// Suspense implementation using createResource
-// type SuspenseResult<A, E> = Result.Success<A, E> | Result.Failure<A, E>;
-// type SuspenseResult<A, E> = {
-//   readonly _tag: "Suspended"
-//   readonly promise: Promise<void>
-//   readonly resolve: () => void
-// } | {
-//   readonly _tag: "Resolved"
-//   readonly result: Result.Success<A, E> | Result.Failure<A, E>
-// }
-// function makeSuspended(rx: Rx.Rx<any>): {
-//   readonly _tag: "Suspended"
-//   readonly promise: Promise<void>
-//   readonly resolve: () => void
-// } {
-//   let resolve: () => void
-//   const promise = new Promise<void>((_resolve) => {
-//     resolve = _resolve
-//   })
-//   ;(promise as any).rx = rx
-//   return {
-//     _tag: "Suspended",
-//     promise,
-//     resolve: resolve!
-//   }
-// }
-// const suspenseRxMap = globalValue(
-//   "@effect-rx/rx-react/suspenseMounts",
-//   () => new WeakMap<Rx.Rx<any>, Rx.Rx<SuspenseResult<any, any>>>()
-// )
-
-// function suspenseRx<A, E>(
-//   registry: Registry.Registry,
-//   rx: Rx.Rx<Result.Result<A, E>>,
-//   suspendOnWaiting: boolean
-// ): Rx.Rx<SuspenseResult<A, E>> {
-//   if (suspenseRxMap.has(rx)) {
-//     return suspenseRxMap.get(rx)!
-//   }
-//   let unmount: (() => void) | undefined
-//   let timeout: NodeJS.Timeout | undefined
-//   function performMount() {
-//     if (timeout !== undefined) {
-//       clearTimeout(timeout)
-//     }
-//     unmount = registry.subscribe(resultRx, constVoid)
-//   }
-//   function performUnmount() {
-//     timeout = undefined
-//     if (unmount !== undefined) {
-//       unmount()
-//       unmount = undefined
-//     }
-//   }
-//   const resultRx = Rx.readable<SuspenseResult<A, E>>(function(get) {
-//     let state: SuspenseResult<A, E> = makeSuspended(rx)
-//     get.subscribe(rx, function(result) {
-//       if (result._tag === "Initial" || (suspendOnWaiting && result.waiting)) {
-//         if (state._tag === "Resolved") {
-//           state = makeSuspended(rx)
-//           get.setSelfSync(state)
-//         }
-//         if (unmount === undefined) {
-//           performMount()
-//         }
-//       } else {
-//         if (unmount !== undefined && timeout === undefined) {
-//           timeout = setTimeout(performUnmount, 1000)
-//         }
-//         if (state._tag === "Resolved") {
-//           state = { _tag: "Resolved", result }
-//           get.setSelfSync(state)
-//         } else {
-//           const resolve = state.resolve
-//           state = { _tag: "Resolved", result }
-//           get.setSelfSync(state)
-//           resolve()
-//         }
-//       }
-//     }, { immediate: true })
-//     return state
-//   })
-//   suspenseRxMap.set(rx, resultRx)
-//   return resultRx
-// }
-
-// export const useRxSuspense = <A, E>(
-//   rx: Rx.Rx<Result.Result<A, E>>,
-//   options?: { readonly suspendOnWaiting?: boolean }
-// ): Accessor<Result.Success<A, E> | Result.Failure<A, E>> => {
-//   const registry = injectRegistry()
-//   const promiseRx = createMemo(() => suspenseRx(registry, rx, options?.suspendOnWaiting ?? false))
-//   const result = useStore(registry, promiseRx())
-//   if (result()._tag === "Suspended") {
-//     throw result.promise
-//   }
-//   return () => result().result as Result.Success<A, E> | Result.Failure<A, E>
-// }
 
 export const useRxSuspense = <A, E>(rx: Rx.Rx<Result.Result<A, E>>, suspendOnWaiting?: boolean) => {
   const registry = injectRegistry()
@@ -216,7 +122,7 @@ export const useRxSuspense = <A, E>(rx: Rx.Rx<Result.Result<A, E>>, suspendOnWai
         { immediate: true },
       )
     })
-  })
+  }, {storage: createDeepSignal})
 
   createEffect(() => {
     const cancel = registry.subscribe(rx, mutate)
@@ -225,60 +131,3 @@ export const useRxSuspense = <A, E>(rx: Rx.Rx<Result.Result<A, E>>, suspendOnWai
 
   return state
 }
-
-// function createSuspenseResource<A, E>(
-//   registry: Registry.Registry,
-//   rx: Rx.Rx<Result.Result<A, E>>,
-//   suspendOnWaiting: boolean
-// ) {
-
-//   return createResource(() => new Promise<Rx.Rx<SuspenseResult<A,E>>>((resolve, reject) => {
-//     Rx.readable<SuspenseResult<A,E>>(function(get) {
-//       const unsubscribe = registry.subscribe(rx, (result) => {
-//         if (result._tag !== "Initial" && (!suspendOnWaiting || !result.waiting)) {
-//           if (result._tag === "Success") {
-//             resolve(result)
-//           } else  {
-//             reject(result.cause)
-//           }
-//           unsubscribe();
-//         }
-//       }, { immediate: true });
-//     })
-//   }));
-// }
-
-// export function useRxSuspense<A, E>(
-//   rx: Rx.Rx<Result.Result<A, E>>,
-//   options?: { readonly suspendOnWaiting?: boolean }
-// ): Resource<SuspenseResult<A,E>> {
-//   const registry = injectRegistry();
-//   const [result, { mutate }] = createSuspenseResource(registry, rx, options?.suspendOnWaiting ?? false);
-//   // createEffect(() => {
-//   //   const cancel = registry.subscribe(rx, (_) => mutate);
-//   //   onCleanup(cancel);
-//   // })
-//   return result
-// }
-
-// export function useRxSuspenseSuccess<A, E>(
-//   rx: Rx.Rx<Result.Result<A, E>>,
-//   options?: { readonly suspendOnWaiting?: boolean }
-// ): Result.Success<A, E> {
-//   const result = useRxSuspense(rx, options)()!;
-//   if (result._tag === "Failure") {
-//     throw Cause.squash(result.cause);
-//   }
-//   return result;
-// }
-
-// function useStore<A>(registry: Registry.Registry, rx: Rx.Rx<A>): Accessor<A> {
-// const [state, setState] = createSignal(registry.get(rx));
-
-//   createEffect(() => {
-//     const cancel = registry.subscribe(rx, setState as (newValue: A) => void);
-//     onCleanup(cancel);
-//   });
-
-//   return state;
-// }
