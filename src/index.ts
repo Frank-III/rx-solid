@@ -50,17 +50,7 @@ export const injectRegistry = (): Registry.Registry => {
 
 // Hook to use an Rx.Writable, similar to useRx in Vue
 export const useRx = <R, W>(rx: Rx.Writable<R, W>): [Accessor<R>, (newValue: W) => void] => {
-  const registry = injectRegistry()
-  const [value, setValue] = createDeepSignal<R>(registry.get(rx))
-
-  createEffect(() => {
-    const cancel = registry.subscribe(rx, setValue as (newValue: R) => void)
-    onCleanup(cancel)
-  })
-
-  const set = (newValue: W) => registry.set(rx, newValue)
-
-  return [value, set]
+  return [useRxValue(rx), useRxSet(rx)]
 }
 
 export const useRxValue: {
@@ -71,11 +61,11 @@ export const useRxValue: {
   const [value, setValue] = createDeepSignal<A>(registry.get(rx))
   const derivedVal = f ? () => f(value()): value
 
-  createEffect(() => {
-    // set value here would also change the derived value
-    const cancel = registry.subscribe(rx, setValue as (newValue: A) => void)
-    onCleanup(cancel)
+  const cancel = registry.subscribe(rx, (_) => {
+    const next = registry.get(rx)
+    setValue(() => next)
   })
+  onCleanup(cancel)
 
   return derivedVal
 }
@@ -124,10 +114,8 @@ export const useRxSuspense = <A, E>(rx: Rx.Rx<Result.Result<A, E>>, suspendOnWai
     })
   }, {storage: createDeepSignal})
 
-  createEffect(() => {
-    const cancel = registry.subscribe(rx, mutate)
-    onCleanup(cancel)
-  })
+  const cancel = registry.subscribe(rx, mutate)
+  onCleanup(cancel)
 
   return state
 }
