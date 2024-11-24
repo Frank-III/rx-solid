@@ -3,9 +3,9 @@ import {
   useContext,
   createSignal,
   onCleanup,
-  createEffect,
   Accessor,
   createResource,
+  getOwner,
   // Resource,
   // createMemo,
 } from 'solid-js'
@@ -49,34 +49,51 @@ export const injectRegistry = (): Registry.Registry => {
 }
 
 // Hook to use an Rx.Writable, similar to useRx in Vue
-export const useRx = <R, W>(rx: Rx.Writable<R, W>): [Accessor<R>, (newValue: W) => void] => {
-  return [useRxValue(rx), useRxSet(rx)]
+export const createRx = <R, W>(
+  rx: Rx.Writable<R, W>
+): readonly [Accessor<R>, (_: W) => void] => {
+  const registry = injectRegistry()
+  const [value, setValue] = createSignal<R>(registry.get(rx))
+
+  const cancel = registry.subscribe(rx, (nextValue) => {
+    setValue(() => nextValue)
+  })
+
+  if (getOwner()) {
+    onCleanup(cancel)
+  }
+
+  return [value, (_: W) => registry.set(rx, _)] as const
 }
 
-export const useRxValue: {
+
+export const createRxValue: {
   <A>(rx: Rx.Rx<A>): Accessor<A>
   <A, B>(rx: Rx.Rx<A>, f: (_: A) => B): Accessor<B>
 } = <A>(rx: Rx.Rx<A>, f?: (_: A) => A): Accessor<A> => {
   const registry = injectRegistry()
+
+  rx = f ? Rx.map(rx, f) : rx
   const [value, setValue] = createDeepSignal<A>(registry.get(rx))
-  const derivedVal = f ? () => f(value()): value
 
-  const cancel = registry.subscribe(rx, (_) => {
-    const next = registry.get(rx)
-    setValue(() => next)
+  const cancel = registry.subscribe(rx, (nextVal) => {
+    setValue(() => nextVal)
   })
-  onCleanup(cancel)
+  if (getOwner()) {
+    onCleanup(cancel)
+  }
 
-  return derivedVal
+  return value
 }
 
 // Hook to set values on an Rx.Writable
-export const useRxSet = <R, W>(rx: Rx.Writable<R, W>): (_: W | ((_: R) => W)) => void => {
+export const createRxSet = <R, W>(rx: Rx.Writable<R, W>): (_: W | ((_: R) => W)) => void => {
   const registry = injectRegistry()
-  createEffect(() => {
-    const cancel = registry.mount(rx)
+  const cancel = registry.mount(rx)
+
+  if (getOwner()) {
     onCleanup(cancel)
-  })
+  }
 
   return (newValue: W | ((_: R) => W)) => {
     if (typeof newValue === 'function') {
@@ -86,18 +103,21 @@ export const useRxSet = <R, W>(rx: Rx.Writable<R, W>): (_: W | ((_: R) => W)) =>
 }
 
 // Hook to use an RxRef
-export const useRxRef = <A>(rxRef: RxRef.ReadonlyRef<A>): Accessor<A> => {
-  const [value, setValue] = createDeepSignal<A>(rxRef.value)
+export const createRxRef = <A>(rxRef: RxRef.ReadonlyRef<A>): Accessor<A> => {
+  const [value, setValue] = createSignal<A>(rxRef.value)
 
-  createEffect(() => {
-    const cancel = rxRef.subscribe(setValue as (newValue: A) => void)
-    onCleanup(cancel)
+  const cancel = rxRef.subscribe((nextValue) => {
+    setValue(() => nextValue)
   })
+
+  if (getOwner()) {
+    onCleanup(cancel)
+  }
 
   return value
 }
 
-export const useRxSuspense = <A, E>(rx: Rx.Rx<Result.Result<A, E>>, suspendOnWaiting?: boolean) => {
+export const createRxSuspense = <A, E>(rx: Rx.Rx<Result.Result<A, E>>, suspendOnWaiting?: boolean) => {
   const registry = injectRegistry()
   const [state, { mutate }] = createResource(() => {
     return new Promise<Result.Result<A, E>>(resolve => {

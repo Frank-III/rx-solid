@@ -1,6 +1,6 @@
 {
   "name": "rx-solid",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "effect-rx for solid",
   "license": "MIT",
   "author": "frank-iii",
@@ -53,26 +53,26 @@
     "solid-js": "^1.6.0"
   },
   "devDependencies": {
-    "@effect/platform": "^0.60.2",
-    "@effect/platform-browser": "^0.39.2",
-    "@effect/schema": "^0.69.2",
-    "@types/node": "^20.12.12",
+    "@effect/platform": "^0.60.3",
+    "@effect/platform-browser": "^0.39.3",
+    "@effect/schema": "^0.69.3",
+    "@types/node": "^20.17.7",
     "@types/scheduler": "^0.23.0",
-    "@typescript-eslint/eslint-plugin": "^7.9.0",
-    "@typescript-eslint/parser": "^7.9.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
     "concurrently": "^8.2.2",
-    "esbuild": "^0.21.3",
+    "esbuild": "^0.21.5",
     "esbuild-plugin-solid": "^0.6.0",
-    "eslint": "^8.56.0",
+    "eslint": "^8.57.1",
     "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-no-only-tests": "^3.1.0",
-    "jsdom": "^24.0.0",
+    "eslint-plugin-no-only-tests": "^3.3.0",
+    "jsdom": "^24.1.3",
     "prettier": "3.0.0",
-    "solid-js": "^1.8.17",
-    "tsup": "^8.0.2",
+    "solid-js": "^1.9.3",
+    "tsup": "^8.3.5",
     "tsup-preset-solid": "^2.2.0",
-    "typescript": "^5.4.5",
-    "vite": "^5.2.11",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
     "vite-plugin-solid": "^2.10.2",
     "vitest": "^1.6.0"
   },
@@ -85,8 +85,8 @@
     "pnpm": ">=9.0.0"
   },
   "dependencies": {
-    "@effect-rx/rx": "^0.33.8",
-    "effect": "^3.5.8",
+    "@effect-rx/rx": "^0.33.10",
+    "effect": "^3.10.16",
     "scheduler": "^0.23.2"
   }
 }

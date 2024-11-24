@@ -1,8 +1,8 @@
 import {
-  useRx,
-  useRxSet,
-  useRxSuspense,
-  useRxValue,
+  createRx,
+  createRxSet,
+  createRxSuspense,
+  createRxValue,
   RegistryContext,
   defaultRegistry,
 } from '../src'
@@ -32,7 +32,7 @@ export default function App() {
 }
 
 const TodoStreamList = () => {
-  const result = useRxSuspense(Todos.stream)
+  const result = createRxSuspense(Todos.stream)
   return (
     <>
       <Show
@@ -53,7 +53,7 @@ const TodoStreamList = () => {
 }
 
 const TodoEffectList = () => {
-  const todos = useRxSuspense(Todos.effect)
+  const todos = createRxSuspense(Todos.effect)
   return (
     <Show
       when={(() => {
@@ -80,8 +80,8 @@ function Todo({ todo }: { readonly todo: Todos.Todo }) {
 }
 
 const PullButton = () => {
-  const pull = useRxSet(Todos.stream)
-  const done = useRxValue(Todos.streamIsDone)
+  const pull = createRxSet(Todos.stream)
+  const done = createRxValue(Todos.streamIsDone)
   return (
     <button onClick={() => pull()} disabled={done()}>
       Pull more
@@ -90,7 +90,7 @@ const PullButton = () => {
 }
 
 const PerPageSelect = () => {
-  const [n, set] = useRx(Todos.perPage)
+  const [n, set] = createRx(Todos.perPage)
   return (
     <label>
       Per page:
@@ -117,6 +117,6 @@ function WorkerWrap() {
 }
 
 function WorkerButton() {
-  const getById = useRxSet(getIdRx)
+  const getById = createRxSet(getIdRx)
   return <button onClick={() => getById('123')}>Get ID from worker</button>
 }
