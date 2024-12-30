@@ -96,6 +96,18 @@ export const createRxValue = <A, B = A>(
 ): Accessor<A | B> => {
   const registry = useContext(RegistryContext)
   if (f) {
+    const rxB = () => Rx.map(rx, f)
+    return useStore(registry, rxB())
+  }
+  return useStore(registry, rx)
+}
+
+export const createRxValueMemo = <A, B = A>(
+  rx: Rx.Rx<A>,
+  f?: (_: A) => B
+): Accessor<A | B> => {
+  const registry = useContext(RegistryContext)
+  if (f) {
     const rxB = createMemo(() => Rx.map(rx, f))
     return useStore(registry, rxB())
   }
@@ -143,7 +155,6 @@ export const createRx = <R, W>(
 
   return [value, setter] as const
 }
-
 
 export const createRxSetPromise = <E, A, W = Result.Result<A,E>>(
   rx: Rx.Writable<Result.Result<A, E>, W>
@@ -207,15 +218,15 @@ export const createRxSuspenseSuccess = <A, E>(
 ): Resource<Result.Success<A, E>> => {
   const state = createRxSuspense(rx, options)
 
-  const successState = createMemo(() => {
+  const successState = () => {
     const result = state()
     if (result && result._tag === "Failure") {
       throw Cause.squash(result.cause)
     }
     return result as Result.Success<A, E>
-  })
+  }
 
-  return state as Resource<Result.Success<A, E>>
+  return successState as Resource<Result.Success<A, E>>
 }
 
 // Example of handling async data loading
@@ -239,7 +250,17 @@ export const createRxAsync = <A, E>(
     })
   }
 
+
   const [data, { refetch, mutate }] = createResource(fetcher)
+
+
+  createEffect(() => {
+    registry.subscribe(rx, (val) => {
+      if (Result.isSuccess(val)) {
+        mutate((_) => val.value)
+      }
+    })
+  })
 
   return {
     data,
@@ -354,7 +375,7 @@ export const useRxSubscribe = <A>(
   })
 }
 
-export const useRxRef = <A>(ref: RxRef.ReadonlyRef<A>): Accessor<A> => {
+export const createRxRef = <A>(ref: RxRef.ReadonlyRef<A>): Accessor<A> => {
   const [value, setValue] = createSignal(ref.value)
 
   createEffect(() => {
@@ -365,7 +386,7 @@ export const useRxRef = <A>(ref: RxRef.ReadonlyRef<A>): Accessor<A> => {
   return value
 }
 
-export const useRxRefProp = <A, K extends keyof A>(
+export const createRxRefProp = <A, K extends keyof A>(
   ref: RxRef.RxRef<A>,
   prop: K
 ): RxRef.RxRef<A[K]> => createMemo(() => ref.prop(prop))()
@@ -373,4 +394,4 @@ export const useRxRefProp = <A, K extends keyof A>(
 export const useRxRefPropValue = <A, K extends keyof A>(
   ref: RxRef.RxRef<A>,
   prop: K
-): Accessor<A[K]> => useRxRef(useRxRefProp(ref, prop))
+): Accessor<A[K]> => createRxRef(createRxRefProp(ref, prop))
