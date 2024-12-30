@@ -1,6 +1,6 @@
 {
   "name": "rx-solid",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "effect-rx for solid",
   "license": "MIT",
   "author": "frank-iii",
@@ -56,7 +56,7 @@
     "@effect/platform": "^0.60.3",
     "@effect/platform-browser": "^0.39.3",
     "@effect/schema": "^0.69.3",
-    "@types/node": "^20.17.7",
+    "@types/node": "^20.17.10",
     "@types/scheduler": "^0.23.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
@@ -73,7 +73,7 @@
     "tsup-preset-solid": "^2.2.0",
     "typescript": "^5.7.2",
     "vite": "^5.4.11",
-    "vite-plugin-solid": "^2.10.2",
+    "vite-plugin-solid": "^2.11.0",
     "vitest": "^1.6.0"
   },
   "keywords": [
@@ -86,7 +86,7 @@
   },
   "dependencies": {
     "@effect-rx/rx": "^0.33.10",
-    "effect": "^3.10.16",
+    "effect": "^3.12.0",
     "scheduler": "^0.23.2"
   }
 }
