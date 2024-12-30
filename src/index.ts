@@ -204,9 +204,9 @@ export const createRxSuspense = <A, E>(
   const [state, {mutate}] = createResource(fetcher)
   createEffect(() => {
     registry.subscribe(rx, (val) => {
-      if (val._tag === "Success") {
-        mutate(val)
-      }
+        if (Result.isNotInitial(val)) {
+          mutate((_) => val)
+        }
     })
   })
   return state
