@@ -1,4 +1,4 @@
-import * as Schema from '@effect/schema/Schema'
+import { Schema } from "effect"
 
 export class InitialMessage extends Schema.TaggedRequest<InitialMessage>()('InitialMessage', {
   failure: Schema.Never,

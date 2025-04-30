@@ -4,7 +4,7 @@ import {
   createRxSuspense,
   createRxValue,
   RegistryContext,
-  defaultRegistry,
+  storeRegistry
 } from '../src'
 import { For, Show, Suspense, createSignal } from 'solid-js'
 import * as Todos from './Todos'
@@ -13,7 +13,7 @@ import { Counter } from './Counter'
 
 export default function App() {
   return (
-    <RegistryContext.Provider value={defaultRegistry}>
+    <RegistryContext.Provider value={RegistryContext.defaultValue}>
       <Counter />
       <WorkerWrap />
       <h3>Stream list</h3>

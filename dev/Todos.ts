@@ -1,9 +1,14 @@
 import { Rx } from '../src'
-import * as HttpClient from '@effect/platform/HttpClient'
-import * as HttpRequest from '@effect/platform/HttpClientRequest'
-import * as HttpResponse from '@effect/platform/HttpClientResponse'
-import * as Schema from '@effect/schema/Schema'
-import { Effect, Layer, Option, Stream } from 'effect'
+import {
+  Cookies,
+  FetchHttpClient,
+  Headers,
+  HttpClient,
+  HttpClientRequest,
+  HttpClientResponse,
+  UrlParams
+} from "@effect/platform"
+import { Effect, Layer, Option, Stream, Schema } from 'effect'
 
 export class Todo extends Schema.Class<Todo>('Todo')({
   id: Schema.Number,
@@ -17,33 +22,33 @@ export class Todo extends Schema.Class<Todo>('Todo')({
 const make = Effect.gen(function* () {
   const defaultClient = yield* HttpClient.HttpClient
   const client = defaultClient.pipe(
-    HttpClient.mapRequest(HttpRequest.prependUrl('https://jsonplaceholder.typicode.com')),
+    HttpClient.mapRequest(HttpClientRequest.prependUrl('https://jsonplaceholder.typicode.com')),
     HttpClient.filterStatusOk,
   )
 
-  const getTodos = HttpRequest.get('/todos')
+  const getTodos = HttpClientRequest.get('/todos')
   const stream = (perPage: number) =>
     Stream.paginateChunkEffect(1, page =>
       getTodos.pipe(
-        HttpRequest.setUrlParams({
+        HttpClientRequest.setUrlParams({
           _page: page.toString(),
           _limit: perPage.toString(),
         }),
-        client,
-        HttpResponse.schemaBodyJsonScoped(Todo.chunk),
+        client.execute,
+        Effect.flatMap(HttpClientResponse.schemaBodyJson(Todo.chunk)),
         Effect.map(chunk => [
           chunk,
           Option.some(page + 1).pipe(Option.filter(() => chunk.length === perPage)),
         ]),
       ),
     )
-  const effect = getTodos.pipe(client, HttpResponse.schemaBodyJsonScoped(Todo.array))
+  const effect = getTodos.pipe(client.execute, Effect.flatMap(HttpClientResponse.schemaBodyJson(Todo.array)))
 
   return { stream, effect } as const
 })
 
 export class Todos extends Effect.Tag('Todos')<Todos, Effect.Effect.Success<typeof make>>() {
-  static Live = Layer.effect(Todos, make).pipe(Layer.provide(HttpClient.layer))
+  static Live = Layer.effect(Todos, make).pipe(Layer.provide(FetchHttpClient.layer))
 }
 
 // Rx exports
