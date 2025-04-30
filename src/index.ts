@@ -61,11 +61,8 @@ function makeStore<A>(registry: Registry.Registry, rx: Rx.Rx<A>): RxStore<A> {
 function useStore<A>(registry: Registry.Registry, rx: Rx.Rx<A>): Accessor<A> {
   const [value, setValue] = createSignal(registry.get(rx))
 
-  createEffect(() => {
-    const unsubscribe = registry.subscribe(rx, (value: A) => setValue(() => value))
-    onCleanup(unsubscribe)
-    // return unsubscribe
-  })
+  const unsubscribe = registry.subscribe(rx, (value: A) => setValue(() => value))
+  onCleanup(unsubscribe)
 
   return value
 }
@@ -115,10 +112,8 @@ export const createRxValueMemo = <A, B = A>(
 }
 
 function mountRx<A>(registry: Registry.Registry, rx: Rx.Rx<A>): void {
-  createEffect(() => {
-    const unlisten = registry.mount(rx)
-    onCleanup(unlisten)
-  })
+  const unlisten = registry.mount(rx)
+  onCleanup(unlisten)
 }
 
 export const useRxMount = <A>(rx: Rx.Rx<A>): void => {
@@ -202,13 +197,12 @@ export const createRxSuspense = <A, E>(
     }
 
   const [state, {mutate}] = createResource(fetcher)
-  createEffect(() => {
-    registry.subscribe(rx, (val) => {
-        if (Result.isNotInitial(val)) {
-          mutate((_) => val)
-        }
-    })
+  const unsubscribe = registry.subscribe(rx, (val) => {
+      if (Result.isNotInitial(val)) {
+        mutate((_) => val)
+      }
   })
+  onCleanup(unsubscribe)
   return state
 }
 
@@ -254,13 +248,12 @@ export const createRxAsync = <A, E>(
   const [data, { refetch, mutate }] = createResource(fetcher)
 
 
-  createEffect(() => {
-    registry.subscribe(rx, (val) => {
-      if (Result.isSuccess(val)) {
-        mutate((_) => val.value)
-      }
-    })
+  const unsubscribe = registry.subscribe(rx, (val) => {
+    if (Result.isSuccess(val)) {
+      mutate((_) => val.value)
+    }
   })
+  onCleanup(unsubscribe)
 
   return {
     data,
@@ -369,19 +362,15 @@ export const useRxSubscribe = <A>(
   options?: { readonly immediate?: boolean }
 ): void => {
   const registry = useContext(RegistryContext)
-  createEffect(() => {
-    const unsubscribe = registry.subscribe(rx, f, options)
-    onCleanup(unsubscribe)
-  })
+  const unsubscribe = registry.subscribe(rx, f, options)
+  onCleanup(unsubscribe)
 }
 
 export const createRxRef = <A>(ref: RxRef.ReadonlyRef<A>): Accessor<A> => {
   const [value, setValue] = createSignal(ref.value)
 
-  createEffect(() => {
-    const unsubscribe = ref.subscribe(setValue)
-    onCleanup(unsubscribe)
-  })
+  const unsubscribe = ref.subscribe(setValue)
+  onCleanup(unsubscribe)
 
   return value
 }
