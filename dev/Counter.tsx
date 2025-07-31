@@ -1,11 +1,11 @@
-import { createEffect } from 'solid-js'
-import { createRx, createRxValue, createRxValueMemo, Rx } from 'src'
+import { createRx, createRxValue, createRxMemo, Rx } from 'src'
+
+const count = Rx.make(0)
 
 export const Counter = () => {
-  const count = Rx.make(0)
   const [cntVal, setCount] = createRx(count)
   const doubleCnt = createRxValue(count, v => v * 2)
-  const tripleCntStr = createRxValueMemo(count, v => String(v * 3))
+  const tripleCntStr = createRxMemo(count, v => String(v * 3))
 
   return (
     <div>

@@ -9,7 +9,6 @@ import * as Cause from "effect/Cause"
 import type * as Exit from "effect/Exit"
 import { globalValue } from "effect/GlobalValue"
 import { createContext, useContext, createSignal, createEffect, createMemo, onCleanup, Accessor, createResource, Resource } from "solid-js"
-import type { ResourceFetcher } from "solid-js"
 
 // Module exports remain the same
 export * as Registry from "@effect-rx/rx/Registry"
@@ -72,7 +71,47 @@ export const initialValuesSet = globalValue(
   () => new WeakMap<Registry.Registry, WeakSet<Rx.Rx<any>>>()
 )
 
-export const createRxInitialValues = (initialValues: Iterable<readonly [Rx.Rx<any>, any]>): void => {
+// SolidJS-native hydration utilities (inspired by solid-events)
+
+/**
+ * Extract state from the current registry for serialization.
+ * This follows SolidJS patterns for SSR state transfer.
+ * 
+ * @example
+ * // On server:
+ * const state = extractRxState(registry)
+ * // Serialize state to HTML or pass as props
+ */
+export const extractRxState = (registry: Registry.Registry): Array<readonly [any, any]> => {
+  const state: Array<readonly [any, any]> = []
+  registry.getNodes().forEach((node, rx) => {
+    // Only extract serializable RX values
+    if (typeof rx !== 'function') {
+      const value = node.value()
+      state.push([rx, value] as const)
+    }
+  })
+  return state
+}
+
+/**
+ * Create a state extractor function for the current registry context.
+ * Useful for SSR scenarios.
+ */
+export const createRxStateExtractor = () => {
+  const registry = useContext(RegistryContext)
+  return () => extractRxState(registry)
+}
+
+/**
+ * Initialize Rx values with hydrated state.
+ * This should be called early in your app setup, similar to solid-events.
+ * 
+ * @example
+ * // In your root component:
+ * createRxHydration(hydratedState)
+ */
+export const createRxHydration = (initialValues: Iterable<readonly [Rx.Rx<any>, any]>): void => {
   const registry = useContext(RegistryContext)
   let set = initialValuesSet.get(registry)
   if (set === undefined) {
@@ -87,28 +126,47 @@ export const createRxInitialValues = (initialValues: Iterable<readonly [Rx.Rx<an
   }
 }
 
+// Legacy alias for backward compatibility
+export const createRxInitialValues = createRxHydration
+
+/**
+ * Subscribe to an Rx value and return a SolidJS Accessor.
+ * 
+ * @example
+ * const count = Rx.make(0)
+ * const countValue = createRxValue(count)
+ * const doubled = createRxValue(count, n => n * 2)
+ */
 export const createRxValue = <A, B = A>(
   rx: Rx.Rx<A>,
   f?: (_: A) => B
 ): Accessor<A | B> => {
   const registry = useContext(RegistryContext)
+  
   if (f) {
-    const rxB = () => Rx.map(rx, f)
-    return useStore(registry, rxB())
+    // Create a derived Rx and subscribe to it
+    const derivedRx = createMemo(() => Rx.map(rx, f))
+    return useStore(registry, derivedRx())
   }
+  
   return useStore(registry, rx)
 }
 
-export const createRxValueMemo = <A, B = A>(
+/**
+ * Create a computed Rx value using SolidJS createMemo.
+ * This is optimized for cases where the mapping function is expensive.
+ * 
+ * @example
+ * const count = Rx.make(0)
+ * const expensive = createRxMemo(count, n => expensiveComputation(n))
+ */
+export const createRxMemo = <A, B>(
   rx: Rx.Rx<A>,
-  f?: (_: A) => B
-): Accessor<A | B> => {
+  f: (_: A) => B
+): Accessor<B> => {
   const registry = useContext(RegistryContext)
-  if (f) {
-    const rxB = createMemo(() => Rx.map(rx, f))
-    return useStore(registry, rxB())
-  }
-  return useStore(registry, rx)
+  const memoizedRx = createMemo(() => Rx.map(rx, f))
+  return useStore(registry, memoizedRx())
 }
 
 function mountRx<A>(registry: Registry.Registry, rx: Rx.Rx<A>): void {
@@ -116,11 +174,53 @@ function mountRx<A>(registry: Registry.Registry, rx: Rx.Rx<A>): void {
   onCleanup(unlisten)
 }
 
-export const useRxMount = <A>(rx: Rx.Rx<A>): void => {
+/**
+ * Create a side effect that runs when an Rx value changes.
+ * Uses SolidJS createEffect for reactive side effects.
+ * 
+ * @example
+ * const count = Rx.make(0)
+ * createRxEffect(count, (value) => {
+ *   console.log('Count changed:', value)
+ * })
+ */
+export const createRxEffect = <A>(
+  rx: Rx.Rx<A>,
+  fn: (value: A) => void,
+  options?: { immediate?: boolean }
+): void => {
+  const value = createRxValue(rx)
+  
+  createEffect(() => {
+    fn(value())
+  })
+  
+  // Also handle immediate execution if requested
+  if (options?.immediate) {
+    fn(value())
+  }
+}
+
+/**
+ * Mount an Rx value to keep it active.
+ * This ensures the Rx value stays subscribed and doesn't get garbage collected.
+ */
+export const createRxMount = <A>(rx: Rx.Rx<A>): void => {
   const registry = useContext(RegistryContext)
   mountRx(registry, rx)
 }
 
+/**
+ * Create a setter function for a writable Rx value.
+ * Use this when you only need the setter, not the getter.
+ * 
+ * @example
+ * const countRx = Rx.make(0)
+ * const setCount = createRxSet(countRx)
+ * 
+ * setCount(n => n + 1)
+ * setCount(42)
+ */
 export const createRxSet = <R, W>(rx: Rx.Writable<R, W>) => {
   const registry = useContext(RegistryContext)
   mountRx(registry, rx)
@@ -134,30 +234,52 @@ export const createRxSet = <R, W>(rx: Rx.Writable<R, W>) => {
   }
 }
 
+/**
+ * Create a reactive getter/setter pair for a writable Rx value.
+ * Similar to createSignal but for Effect-RX values.
+ * 
+ * @example
+ * const countRx = Rx.make(0)
+ * const [count, setCount] = createRx(countRx)
+ * 
+ * setCount(n => n + 1) // updater function
+ * setCount(42)         // direct value
+ */
 export const createRx = <R, W>(
   rx: Rx.Writable<R, W>
 ): readonly [Accessor<R>, (_: W | ((_: R) => W)) => void] => {
   const registry = useContext(RegistryContext)
   const value = useStore(registry, rx)
 
-  const setter = (value: W | ((_: R) => W)) => {
-    if (typeof value === "function") {
-      registry.set(rx, (value as any)(registry.get(rx)))
+  const setter = (newValue: W | ((_: R) => W)) => {
+    if (typeof newValue === "function") {
+      registry.set(rx, (newValue as any)(registry.get(rx)))
     } else {
-      registry.set(rx, value)
+      registry.set(rx, newValue)
     }
   }
 
   return [value, setter] as const
 }
 
-export const createRxSetPromise = <E, A, W = Result.Result<A,E>>(
+/**
+ * Create a Resource-based setter for async Rx values.
+ * This provides SolidJS Resource integration for async operations.
+ * 
+ * @example
+ * const todoRx = Rx.make(todoEffect)
+ * const { resource, set, refetch } = createRxResourceSet(todoRx)
+ * 
+ * // Trigger async operation
+ * set(newTodoData)
+ */
+export const createRxResourceSet = <E, A, W = Result.Result<A,E>>(
   rx: Rx.Writable<Result.Result<A, E>, W>
 ) => {
   const registry = useContext(RegistryContext)
 
-  const fetcher: ResourceFetcher<W, Exit.Exit<A, E>> = async (value: W) => {
-    return new Promise((resolve) => {
+  const fetcher = async (value: W) => {
+    return new Promise<Exit.Exit<A, E>>((resolve) => {
       const unsubscribe = registry.subscribe(rx, (result) => {
         if (result.waiting || result._tag === "Initial") return
         unsubscribe()
@@ -167,205 +289,144 @@ export const createRxSetPromise = <E, A, W = Result.Result<A,E>>(
     })
   }
 
-  const [state, { mutate, refetch }] = createResource<Exit.Exit<A, E>, W>(() => registry.get(rx) as W, fetcher)
+  const [resource, { mutate, refetch }] = createResource<Exit.Exit<A, E>, W>(
+    () => registry.get(rx) as W, 
+    fetcher
+  )
 
   return {
-    state,
+    resource,
     set: mutate,
     refetch
   }
 }
 
-export const createRxSuspense = <A, E>(
+/**
+ * Create a SolidJS Resource from an Effect-RX Result.
+ * This provides native SolidJS async handling with Suspense support.
+ * 
+ * @example
+ * const todosRx = Rx.make(todoEffect)
+ * const todos = createRxResource(todosRx)
+ * 
+ * return (
+ *   <Suspense fallback="Loading...">
+ *     <div>{todos()?.value}</div>
+ *   </Suspense>
+ * )
+ */
+export const createRxResource = <A, E>(
   rx: Rx.Rx<Result.Result<A, E>>,
   options?: { readonly suspendOnWaiting?: boolean }
 ): Resource<Result.Success<A, E> | Result.Failure<A, E>> => {
   const registry = useContext(RegistryContext)
 
-  const fetcher: ResourceFetcher<true, Result.Success<A, E> | Result.Failure<A, E>> =
-    async () => {
-      return new Promise((resolve) => {
-        const unsubscribe = registry.subscribe(rx, (result) => {
-          if (result._tag === "Initial" ||
-            (options?.suspendOnWaiting && result.waiting)) {
-            return
-          }
-          unsubscribe()
-          resolve(result)
-        }, { immediate: true })
-      })
+  const fetcher = () => {
+    const currentValue = registry.get(rx)
+    
+    // Return resolved values immediately
+    if (currentValue._tag !== "Initial" && 
+        !(options?.suspendOnWaiting && currentValue.waiting)) {
+      return currentValue as Result.Success<A, E> | Result.Failure<A, E>
     }
 
-  const [state, {mutate}] = createResource(fetcher)
-  const unsubscribe = registry.subscribe(rx, (val) => {
-      if (Result.isNotInitial(val)) {
-        mutate((_) => val)
-      }
+    // Create promise for unresolved values
+    return new Promise<Result.Success<A, E> | Result.Failure<A, E>>((resolve) => {
+      const unsubscribe = registry.subscribe(rx, (result) => {
+        if (result._tag === "Initial" ||
+          (options?.suspendOnWaiting && result.waiting)) {
+          return
+        }
+        unsubscribe()
+        resolve(result as Result.Success<A, E> | Result.Failure<A, E>)
+      }, { immediate: false })
+    })
+  }
+
+  const [resource, { mutate }] = createResource(fetcher)
+  
+  // Keep resource in sync with Rx updates
+  const unsubscribe = registry.subscribe(rx, (result) => {
+    if (Result.isNotInitial(result) && !(options?.suspendOnWaiting && result.waiting)) {
+      mutate(() => result as Result.Success<A, E> | Result.Failure<A, E>)
+    }
   })
+  
   onCleanup(unsubscribe)
-  return state
+  
+  return resource
 }
 
-export const createRxSuspenseSuccess = <A, E>(
+/**
+ * Create a SolidJS Resource that only returns success values.
+ * Failures are thrown as errors for ErrorBoundary to catch.
+ * 
+ * @example
+ * const todos = createRxResourceSuccess(todosRx)
+ * 
+ * return (
+ *   <ErrorBoundary fallback="Error loading">
+ *     <Suspense fallback="Loading...">
+ *       <div>{todos()?.value}</div>
+ *     </Suspense>
+ *   </ErrorBoundary>
+ * )
+ */
+export const createRxResourceSuccess = <A, E>(
   rx: Rx.Rx<Result.Result<A, E>>,
   options?: { readonly suspendOnWaiting?: boolean }
 ): Resource<Result.Success<A, E>> => {
-  const state = createRxSuspense(rx, options)
+  const resource = createRxResource(rx, options)
 
-  const successState = () => {
-    const result = state()
+  const successResource = () => {
+    const result = resource()
     if (result && result._tag === "Failure") {
       throw Cause.squash(result.cause)
     }
     return result as Result.Success<A, E>
   }
 
-  return successState as Resource<Result.Success<A, E>>
+  return successResource as Resource<Result.Success<A, E>>
 }
 
-// Example of handling async data loading
-export const createRxAsync = <A, E>(
-  rx: Rx.Rx<Result.Result<A, E>>
-) => {
-  const registry = useContext(RegistryContext)
-
-  const fetcher: ResourceFetcher<true, A> = async () => {
-    return new Promise((resolve, reject) => {
-      const unsubscribe = registry.subscribe(rx, (result) => {
-        if (result._tag === "Initial" || result.waiting) return
-
-        unsubscribe()
-        if (result._tag === "Failure") {
-          reject(Cause.squash(result.cause))
-        } else {
-          resolve(result.value)
-        }
-      }, { immediate: true })
-    })
-  }
+// For complex async patterns, use solid-query or build on top of createRxResource
+// This keeps rx-solid focused on core primitives
 
 
-  const [data, { refetch, mutate }] = createResource(fetcher)
-
-
-  const unsubscribe = registry.subscribe(rx, (val) => {
-    if (Result.isSuccess(val)) {
-      mutate((_) => val.value)
-    }
-  })
-  onCleanup(unsubscribe)
-
-  return {
-    data,
-    loading: () => data.loading,
-    error: () => data.error,
-    refetch,
-    mutate
-  }
-}
-
-// Example usage of loading states
-export const createRxLoadingState = <A, E>(
-  rx: Rx.Rx<Result.Result<A, E>>
-) => {
-  const registry = useContext(RegistryContext)
-
-  const [state] = createResource(async () => {
-    const value = registry.get(rx)
-    if (value._tag === "Initial" || value.waiting) {
-      return { loading: true, data: undefined, error: undefined }
-    }
-    if (value._tag === "Failure") {
-      return {
-        loading: false,
-        data: undefined,
-        error: Cause.squash(value.cause)
-      }
-    }
-    return { loading: false, data: value.value, error: undefined }
-  })
-
-  return state
-}
-
-// Example of combining multiple async rx values
-export const createRxCombinedAsync = <T extends Record<string, Rx.Rx<Result.Result<any, any>>>>(
-  sources: T
-) => {
-  type ResultType = {
-    [K in keyof T]: T[K] extends Rx.Rx<Result.Result<infer A, any>> ? A : never
-  }
-
-  const fetcher: ResourceFetcher<true, ResultType> = async () => {
-    const entries = Object.entries(sources)
-    const results = await Promise.all(
-      entries.map(([key, rx]) =>
-        createRxAsync(rx).data()
-      )
-    )
-
-    return Object.fromEntries(
-      entries.map(([key], index) => [key, results[index]])
-    ) as ResultType
-  }
-
-  const [data, { refetch }] = createResource(fetcher)
-
-  return {
-    data,
-    loading: () => data.loading,
-    error: () => data.error,
-    refetch
-  }
-}
-
-// Example usage with error boundaries
-export const useRxErrorBoundary = <A, E>(
-  rx: Rx.Rx<Result.Result<A, E>>
-) => {
-  const state = createRxAsync(rx)
-
-  return {
-    fallback: (props: { children: (error: Error) => any }) => {
-      const error = state.error()
-      if (error) {
-        return props.children(error)
-      }
-      return null
-    },
-    loading: (props: { children: any }) => {
-      if (state.loading()) {
-        return props.children
-      }
-      return null
-    },
-    content: (props: { children: (data: A) => any }) => {
-      const data = state.data()
-      if (data && !state.loading() && !state.error()) {
-        return props.children(data)
-      }
-      return null
-    }
-  }
-}
-
-
-export const useRxRefresh = <A>(rx: Rx.Rx<A> & Rx.Refreshable): () => void => {
+/**
+ * Create a refresh function for an Rx value.
+ * This forces the Rx to re-evaluate, useful for manual cache invalidation.
+ */
+export const createRxRefresh = <A>(rx: Rx.Rx<A>): () => void => {
   const registry = useContext(RegistryContext)
   mountRx(registry, rx)
   return () => registry.refresh(rx)
 }
 
-export const useRxSubscribe = <A>(
+/**
+ * Subscribe to an Rx value with a callback function.
+ * The subscription is automatically cleaned up when the component unmounts.
+ * 
+ * @example
+ * const count = Rx.make(0)
+ * createRxSubscribe(count, (value) => {
+ *   console.log('Count changed:', value)
+ * }, { immediate: true })
+ */
+export const createRxSubscribe = <A>(
   rx: Rx.Rx<A>,
-  f: (_: A) => void,
+  fn: (_: A) => void,
   options?: { readonly immediate?: boolean }
 ): void => {
   const registry = useContext(RegistryContext)
-  const unsubscribe = registry.subscribe(rx, f, options)
+  const unsubscribe = registry.subscribe(rx, fn, options)
   onCleanup(unsubscribe)
 }
 
+/**
+ * Create a SolidJS Accessor from an RxRef.
+ * RxRef is Effect-RX's way of handling references to reactive values.
+ */
 export const createRxRef = <A>(ref: RxRef.ReadonlyRef<A>): Accessor<A> => {
   const [value, setValue] = createSignal(ref.value)
 
@@ -375,12 +436,21 @@ export const createRxRef = <A>(ref: RxRef.ReadonlyRef<A>): Accessor<A> => {
   return value
 }
 
+/**
+ * Create a derived RxRef that focuses on a specific property.
+ * Uses SolidJS createMemo for optimal performance.
+ */
 export const createRxRefProp = <A, K extends keyof A>(
   ref: RxRef.RxRef<A>,
   prop: K
 ): RxRef.RxRef<A[K]> => createMemo(() => ref.prop(prop))()
 
-export const useRxRefPropValue = <A, K extends keyof A>(
+/**
+ * Create an Accessor for a specific property of an RxRef.
+ * Combines createRxRefProp and createRxRef for convenience.
+ */
+export const createRxRefPropValue = <A, K extends keyof A>(
   ref: RxRef.RxRef<A>,
   prop: K
 ): Accessor<A[K]> => createRxRef(createRxRefProp(ref, prop))
+

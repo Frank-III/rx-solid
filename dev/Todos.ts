@@ -1,13 +1,10 @@
 import { Rx } from '../src'
 import {
-  Cookies,
   FetchHttpClient,
-  Headers,
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
-  UrlParams
-} from "@effect/platform"
+} from '@effect/platform'
 import { Effect, Layer, Option, Stream, Schema } from 'effect'
 
 export class Todo extends Schema.Class<Todo>('Todo')({
@@ -42,30 +39,37 @@ const make = Effect.gen(function* () {
         ]),
       ),
     )
-  const effect = getTodos.pipe(client.execute, Effect.flatMap(HttpClientResponse.schemaBodyJson(Todo.array)))
+
+  const effect = getTodos.pipe(
+    client.execute,
+    Effect.flatMap(HttpClientResponse.schemaBodyJson(Todo.array)),
+  )
 
   return { stream, effect } as const
 })
 
-export class Todos extends Effect.Tag('Todos')<Todos, Effect.Effect.Success<typeof make>>() {
-  static Live = Layer.effect(Todos, make).pipe(Layer.provide(FetchHttpClient.layer))
-}
+export class Todos extends Effect.Service<Todos>()('Todos', {
+  effect: make,
+  dependencies: [FetchHttpClient.layer],
+}) {}
 
-// Rx exports
-
-const todosRuntime = Rx.runtime(Todos.Live)
+const todosRuntime = Rx.runtime(Todos.Default)
 
 export const perPage = Rx.make(5)
 
 export const stream = todosRuntime.pull(
-  get => Stream.unwrap(Todos.stream(get(perPage))),
+  get =>
+    Todos.pipe(
+      Effect.map(_ => _.stream(get(perPage))),
+      Stream.unwrap,
+    ),
   // .pipe(
   //   // preload the next page
   //   Stream.bufferChunks({ capacity: 1 }),
   // ),
 )
 
-export const effect = todosRuntime.rx(Todos.effect)
+export const effect = todosRuntime.rx(Todos.pipe(Effect.flatMap(_ => _.effect)))
 
 export const streamIsDone = Rx.make(get => {
   const r = get(stream)
