@@ -4,7 +4,7 @@ import {
   HttpClient,
   HttpClientRequest,
   HttpClientResponse,
-} from "@effect/platform"
+} from '@effect/platform'
 import { Effect, Layer, Option, Stream, Schema } from 'effect'
 
 export class Todo extends Schema.Class<Todo>('Todo')({
@@ -39,12 +39,16 @@ const make = Effect.gen(function* () {
         ]),
       ),
     )
-  const effect = getTodos.pipe(client.execute, Effect.flatMap(HttpClientResponse.schemaBodyJson(Todo.array)))
+
+  const effect = getTodos.pipe(
+    client.execute,
+    Effect.flatMap(HttpClientResponse.schemaBodyJson(Todo.array)),
+  )
 
   return { stream, effect } as const
 })
 
-export class Todos extends Effect.Service<Todos>()("Todos", {
+export class Todos extends Effect.Service<Todos>()('Todos', {
   effect: make,
   dependencies: [FetchHttpClient.layer],
 }) {}
@@ -54,14 +58,18 @@ const todosRuntime = Rx.runtime(Todos.Default)
 export const perPage = Rx.make(5)
 
 export const stream = todosRuntime.pull(
-  get => Todos.pipe(Effect.map(_ => _.stream(get(perPage)))),
+  get =>
+    Todos.pipe(
+      Effect.map(_ => _.stream(get(perPage))),
+      Stream.unwrap,
+    ),
   // .pipe(
   //   // preload the next page
   //   Stream.bufferChunks({ capacity: 1 }),
   // ),
 )
 
-export const effect = todosRuntime.rx(Todos.pipe(Effect.map(_ => _.effect)))
+export const effect = todosRuntime.rx(Todos.pipe(Effect.flatMap(_ => _.effect)))
 
 export const streamIsDone = Rx.make(get => {
   const r = get(stream)

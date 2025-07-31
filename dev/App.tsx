@@ -1,49 +1,140 @@
 import {
   createRx,
   createRxSet,
-  createRxSuspense,
+  createRxResource,
   createRxValue,
+  createRxMemo,
+  createRxEffect,
   RegistryContext,
-  storeRegistry
+  Registry,
 } from '../src'
+import { RegistryProvider } from '../src/components'
 import { For, Show, Suspense, createSignal } from 'solid-js'
 import * as Todos from './Todos'
 import { getIdRx } from './worker/client'
 import { Counter } from './Counter'
+import { HydrationExample } from './HydrationExample'
+
+const PrimitivesShowcase = () => {
+  // Showcase the new SolidJS-native primitives
+  const [count, setCount] = createRx(Todos.perPage)
+  const doubled = createRxMemo(Todos.perPage, n => n * 2)
+  const tripled = createRxValue(Todos.perPage, n => n * 3)
+
+  // Demonstrate createRxEffect for side effects
+  createRxEffect(Todos.perPage, value => {
+    console.log('🔄 Per page changed to:', value)
+  })
+
+  return (
+    <div
+      style={{
+        padding: '20px',
+        border: '2px solid #4ade80',
+        'border-radius': '8px',
+        'background-color': '#f0fdf4',
+        margin: '20px 0',
+      }}
+    >
+      <h2>🧩 SolidJS-Native Primitives</h2>
+      <div
+        style={{
+          display: 'grid',
+          'grid-template-columns': 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '15px',
+        }}
+      >
+        <div style={{ padding: '10px', 'background-color': 'white', 'border-radius': '6px' }}>
+          <h4>🔢 createRx</h4>
+          <p>
+            Value: <strong>{count()}</strong>
+          </p>
+          <div style={{ display: 'flex', 'flex-direction': 'column', gap: '5px' }}>
+            <button onClick={() => setCount(c => c + 1)}>⬆️ +1</button>
+            <button onClick={() => setCount(c => c - 1)}>⬇️ -1</button>
+          </div>
+        </div>
+
+        <div style={{ padding: '10px', 'background-color': 'white', 'border-radius': '6px' }}>
+          <h4>🧠 createRxMemo</h4>
+          <p>
+            Doubled: <strong>{doubled()}</strong>
+          </p>
+          <small>Memoized computation</small>
+        </div>
+
+        <div style={{ padding: '10px', 'background-color': 'white', 'border-radius': '6px' }}>
+          <h4>🔄 createRxValue</h4>
+          <p>
+            Tripled: <strong>{tripled()}</strong>
+          </p>
+          <small>Direct transformation</small>
+        </div>
+
+        <div style={{ padding: '10px', 'background-color': 'white', 'border-radius': '6px' }}>
+          <h4>⚙️ createRxEffect</h4>
+          <p>Side effects active</p>
+          <small>Check console for logs</small>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
+  const registry = Registry.make({
+    scheduleTask: (f: () => void) => queueMicrotask(f),
+    defaultIdleTTL: 400,
+  })
+
   return (
-    <RegistryContext.Provider value={RegistryContext.defaultValue}>
-      <Counter />
-      <WorkerWrap />
-      <h3>Stream list</h3>
-      <Suspense fallback={<p>Loading...</p>}>
-        <TodoStreamList />
-      </Suspense>
-      <PullButton />
-      <br />
-      <PerPageSelect />
-      <h3>Effect list</h3>
-      <Suspense fallback={<p>Loading...</p>}>
-        <TodoEffectList />
-      </Suspense>
-    </RegistryContext.Provider>
+    <RegistryProvider registry={registry}>
+      <div style={{ padding: '20px' }}>
+        <h1>🚀 rx-solid: SolidJS-Native Primitives</h1>
+        <p>Clean, focused primitives for Effect-RX integration with SolidJS</p>
+
+        {/* New Primitives Showcase */}
+        <PrimitivesShowcase />
+
+        {/* Hydration Example */}
+        <HydrationExample />
+
+        {/* Original Examples */}
+        <div style={{ 'margin-top': '40px' }}>
+          <Counter />
+          <WorkerWrap />
+
+          <h3>Stream list</h3>
+          <Suspense fallback={<p>Loading...</p>}>
+            <TodoStreamList />
+          </Suspense>
+          <PullButton />
+          <br />
+          <PerPageSelect />
+
+          <h3>Effect list</h3>
+          <Suspense fallback={<p>Loading...</p>}>
+            <TodoEffectList />
+          </Suspense>
+        </div>
+      </div>
+    </RegistryProvider>
   )
 }
 
 const TodoStreamList = () => {
-  const result = createRxSuspense(Todos.stream)
+  const result = createRxValue(Todos.stream)
   return (
     <>
       <Show
         when={(() => {
           const res = result()
-          return res?._tag === 'Success' && res
+          return res?._tag === 'Success' && res.value
         })()}
       >
         {res => (
           <div style={{ 'text-align': 'left' }}>
-            <For each={res().value.items}>{todo => <Todo todo={todo} />}</For>
+            <For each={res().items}>{todo => <Todo todo={todo} />}</For>
           </div>
         )}
       </Show>
@@ -53,7 +144,7 @@ const TodoStreamList = () => {
 }
 
 const TodoEffectList = () => {
-  const todos = createRxSuspense(Todos.effect)
+  const todos = createRxResource(Todos.effect)
   return (
     <Show
       when={(() => {
