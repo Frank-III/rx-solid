@@ -1,19 +1,19 @@
 <p>
-  <img width="100%" src="https://assets.solidjs.com/banner?type=rx-solid&background=tiles&project=%20" alt="rx-solid">
+  <img width="100%" src="https://assets.solidjs.com/banner?type=atom-solid&background=tiles&project=%20" alt="atom-solid">
 </p>
 
-# rx-solid
+# atom-solid
 
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
 
-effect-rx for solid
+effect-atom for solid
 
-> **Note** After using this template, you have to search and replace all `rx-solid` and similar strings
+> **Note** After using this template, you have to search and replace all `atom-solid` and similar strings
 > with appropriate texts.
 >
-> `rx-solid` should be a **kebab-case** string representing the name of you monorepo.
+> `atom-solid` should be a **kebab-case** string representing the name of you monorepo.
 >
-> `effect-rx for solid` should be a **Normal case** string with the description of the repository.
+> `effect-atom for solid` should be a **Normal case** string with the description of the repository.
 >
 > `frank-iii` should be a **kebab-case** string from your profile URL.
 
@@ -22,15 +22,15 @@ effect-rx for solid
 Install it:
 
 ```bash
-npm i rx-solid
+npm i atom-solid
 # or
-yarn add rx-solid
+yarn add atom-solid
 # or
-pnpm add rx-solid
+pnpm add atom-solid
 ```
 
 Use it:
 
 ```tsx
-import rx-solid from 'rx-solid'
+import atom-solid from 'atom-solid'
 ```

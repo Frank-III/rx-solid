@@ -1,74 +1,86 @@
 /**
  * @since 1.0.0
  */
-import * as Registry from "@effect-rx/rx/Registry"
-import * as Result from "@effect-rx/rx/Result"
-import * as Rx from "@effect-rx/rx/Rx"
-import type * as RxRef from "@effect-rx/rx/RxRef"
-import * as Cause from "effect/Cause"
-import type * as Exit from "effect/Exit"
-import { globalValue } from "effect/GlobalValue"
-import { createContext, useContext, createSignal, createEffect, createMemo, onCleanup, Accessor, createResource, Resource } from "solid-js"
+import * as Registry from '@effect-atom/atom/Registry'
+import * as Result from '@effect-atom/atom/Result'
+import * as Atom from '@effect-atom/atom/Atom'
+import type * as AtomRef from '@effect-atom/atom/AtomRef'
+import * as Cause from 'effect/Cause'
+import type * as Exit from 'effect/Exit'
+import { globalValue } from 'effect/GlobalValue'
+import {
+  createContext,
+  useContext,
+  createSignal,
+  createEffect,
+  createMemo,
+  onCleanup,
+  Accessor,
+  createResource,
+  Resource,
+} from 'solid-js'
 
 // Module exports remain the same
-export * as Registry from "@effect-rx/rx/Registry"
-export * as Result from "@effect-rx/rx/Result"
-export * as Rx from "@effect-rx/rx/Rx"
-export * as RxRef from "@effect-rx/rx/RxRef"
+export * as Registry from '@effect-atom/atom/Registry'
+export * as Result from '@effect-atom/atom/Result'
+export * as Atom from '@effect-atom/atom/Atom'
+export * as AtomRef from '@effect-atom/atom/AtomRef'
 
 function scheduleTask(f: () => void): void {
   queueMicrotask(f)
 }
 
-export const RegistryContext = createContext<Registry.Registry>(Registry.make({
-  scheduleTask,
-  defaultIdleTTL: 400
-}))
+export const RegistryContext = createContext<Registry.Registry>(
+  Registry.make({
+    scheduleTask,
+    defaultIdleTTL: 400,
+  }),
+)
 
-interface RxStore<A> {
+interface AtomStore<A> {
   readonly subscribe: (f: () => void) => () => void
   readonly snapshot: () => A
 }
 
 export const storeRegistry = globalValue(
-  "@effect-rx/rx-solid/storeRegistry",
-  () => new WeakMap<Registry.Registry, WeakMap<Rx.Rx<any>, RxStore<any>>>()
+  '@effect-rx/atom-solid/storeRegistry',
+  () => new WeakMap<Registry.Registry, WeakMap<Atom.Atom<any>, AtomStore<any>>>(),
 )
 
-function makeStore<A>(registry: Registry.Registry, rx: Rx.Rx<A>): RxStore<A> {
+function makeStore<A>(registry: Registry.Registry, atom: Atom.Atom<A>): AtomStore<A> {
   let stores = storeRegistry.get(registry)
   if (stores === undefined) {
     stores = new WeakMap()
     storeRegistry.set(registry, stores)
   }
-  const store = stores.get(rx)
+  const store = stores.get(atom)
   if (store !== undefined) {
     return store
   }
-  const newStore: RxStore<A> = {
+  const newStore: AtomStore<A> = {
     subscribe(f) {
-      return registry.subscribe(rx, f)
+      return registry.subscribe(atom, f)
     },
     snapshot() {
-      return registry.get(rx)
-    }
+      return registry.get(atom)
+    },
   }
-  stores.set(rx, newStore)
+  stores.set(atom, newStore)
   return newStore
 }
 
-function useStore<A>(registry: Registry.Registry, rx: Rx.Rx<A>): Accessor<A> {
-  const [value, setValue] = createSignal(registry.get(rx))
+function useStore<A>(registry: Registry.Registry, atom: Atom.Atom<A>): Accessor<A> {
+  const [value, setValue] = createSignal(registry.get(atom))
 
-  const unsubscribe = registry.subscribe(rx, (value: A) => setValue(() => value))
+  const unsubscribe = registry.subscribe(atom, (value: A) => setValue(() => value))
   onCleanup(unsubscribe)
 
   return value
 }
 
 export const initialValuesSet = globalValue(
-  "@effect-rx/rx-solid/initialValuesSet",
-  () => new WeakMap<Registry.Registry, WeakSet<Rx.Rx<any>>>()
+  '@effect-rx/atom-solid/initialValuesSet',
+  () => new WeakMap<Registry.Registry, WeakSet<Atom.Atom<any>>>(),
 )
 
 // SolidJS-native hydration utilities (inspired by solid-events)
@@ -76,19 +88,19 @@ export const initialValuesSet = globalValue(
 /**
  * Extract state from the current registry for serialization.
  * This follows SolidJS patterns for SSR state transfer.
- * 
+ *
  * @example
  * // On server:
- * const state = extractRxState(registry)
+ * const state = extractAtomState(registry)
  * // Serialize state to HTML or pass as props
  */
-export const extractRxState = (registry: Registry.Registry): Array<readonly [any, any]> => {
+export const extractAtomState = (registry: Registry.Registry): Array<readonly [any, any]> => {
   const state: Array<readonly [any, any]> = []
-  registry.getNodes().forEach((node, rx) => {
-    // Only extract serializable RX values
-    if (typeof rx !== 'function') {
+  registry.getNodes().forEach((node, atom) => {
+    // Only extract serializable Atom values
+    if (typeof atom !== 'function') {
       const value = node.value()
-      state.push([rx, value] as const)
+      state.push([atom, value] as const)
     }
   })
   return state
@@ -98,103 +110,99 @@ export const extractRxState = (registry: Registry.Registry): Array<readonly [any
  * Create a state extractor function for the current registry context.
  * Useful for SSR scenarios.
  */
-export const createRxStateExtractor = () => {
+export const createAtomStateExtractor = () => {
   const registry = useContext(RegistryContext)
-  return () => extractRxState(registry)
+  return () => extractAtomState(registry)
 }
 
 /**
- * Initialize Rx values with hydrated state.
+ * Initialize Atom values with hydrated state.
  * This should be called early in your app setup, similar to solid-events.
- * 
+ *
  * @example
  * // In your root component:
- * createRxHydration(hydratedState)
+ * createAtomHydration(hydratedState)
  */
-export const createRxHydration = (initialValues: Iterable<readonly [Rx.Rx<any>, any]>): void => {
+export const createAtomHydration = (
+  initialValues: Iterable<readonly [Atom.Atom<any>, any]>,
+): void => {
   const registry = useContext(RegistryContext)
   let set = initialValuesSet.get(registry)
   if (set === undefined) {
     set = new WeakSet()
     initialValuesSet.set(registry, set)
   }
-  for (const [rx, value] of initialValues) {
-    if (!set.has(rx)) {
-      set.add(rx)
-      ;(registry as any).ensureNode(rx).setValue(value)
+  for (const [atom, value] of initialValues) {
+    if (!set.has(atom)) {
+      set.add(atom)
+      ;(registry as any).ensureNode(atom).setValue(value)
     }
   }
 }
 
 // Legacy alias for backward compatibility
-export const createRxInitialValues = createRxHydration
+export const createAtomInitialValues = createAtomHydration
 
 /**
- * Subscribe to an Rx value and return a SolidJS Accessor.
- * 
+ * Subscribe to an Atom value and return a SolidJS Accessor.
+ *
  * @example
- * const count = Rx.make(0)
- * const countValue = createRxValue(count)
- * const doubled = createRxValue(count, n => n * 2)
+ * const count = Atom.make(0)
+ * const countValue = createAtomValue(count)
+ * const doubled = createAtomValue(count, n => n * 2)
  */
-export const createRxValue = <A, B = A>(
-  rx: Rx.Rx<A>,
-  f?: (_: A) => B
-): Accessor<A | B> => {
+export const createAtomValue = <A, B = A>(atom: Atom.Atom<A>, f?: (_: A) => B): Accessor<A | B> => {
   const registry = useContext(RegistryContext)
-  
+
   if (f) {
-    // Create a derived Rx and subscribe to it
-    const derivedRx = createMemo(() => Rx.map(rx, f))
-    return useStore(registry, derivedRx())
+    // Create a derived Atom and subscribe to it
+    const derivedAtom = createMemo(() => Atom.map(atom, f))
+    return useStore(registry, derivedAtom())
   }
-  
-  return useStore(registry, rx)
+
+  return useStore(registry, atom)
 }
 
 /**
- * Create a computed Rx value using SolidJS createMemo.
+ * Create a computed Atom value using SolidJS createMemo.
  * This is optimized for cases where the mapping function is expensive.
- * 
+ *
  * @example
- * const count = Rx.make(0)
- * const expensive = createRxMemo(count, n => expensiveComputation(n))
+ * const count = Atom.make(0)
+ * const expensive = createAtomMemo(count, n => expensiveComputation(n))
  */
-export const createRxMemo = <A, B>(
-  rx: Rx.Rx<A>,
-  f: (_: A) => B
-): Accessor<B> => {
+export const createAtomMemo = <A, B>(atom: Atom.Atom<A>, f: (_: A) => B): Accessor<B> => {
   const registry = useContext(RegistryContext)
-  const memoizedRx = createMemo(() => Rx.map(rx, f))
-  return useStore(registry, memoizedRx())
+  const memoizedAtom = createMemo(() => Atom.map(atom, f))
+  return useStore(registry, memoizedAtom())
 }
 
-function mountRx<A>(registry: Registry.Registry, rx: Rx.Rx<A>): void {
-  const unlisten = registry.mount(rx)
+function mountAtom<A>(registry: Registry.Registry, atom: Atom.Atom<A>): void {
+  const unlisten = registry.mount(atom)
   onCleanup(unlisten)
 }
 
 /**
- * Create a side effect that runs when an Rx value changes.
+ * Create a side effect that runs when an Atom value changes.
  * Uses SolidJS createEffect for reactive side effects.
- * 
+ *
  * @example
- * const count = Rx.make(0)
- * createRxEffect(count, (value) => {
+ * const count = Atom.make(0)
+ * createAtomEffect(count, (value) => {
  *   console.log('Count changed:', value)
  * })
  */
-export const createRxEffect = <A>(
-  rx: Rx.Rx<A>,
+export const createAtomEffect = <A>(
+  atom: Atom.Atom<A>,
   fn: (value: A) => void,
-  options?: { immediate?: boolean }
+  options?: { immediate?: boolean },
 ): void => {
-  const value = createRxValue(rx)
-  
+  const value = createAtomValue(atom)
+
   createEffect(() => {
     fn(value())
   })
-  
+
   // Also handle immediate execution if requested
   if (options?.immediate) {
     fn(value())
@@ -202,60 +210,60 @@ export const createRxEffect = <A>(
 }
 
 /**
- * Mount an Rx value to keep it active.
- * This ensures the Rx value stays subscribed and doesn't get garbage collected.
+ * Mount an Atom value to keep it active.
+ * This ensures the Atom value stays subscribed and doesn't get garbage collected.
  */
-export const createRxMount = <A>(rx: Rx.Rx<A>): void => {
+export const createAtomMount = <A>(atom: Atom.Atom<A>): void => {
   const registry = useContext(RegistryContext)
-  mountRx(registry, rx)
+  mountAtom(registry, atom)
 }
 
 /**
- * Create a setter function for a writable Rx value.
+ * Create a setter function for a writable Atom value.
  * Use this when you only need the setter, not the getter.
- * 
+ *
  * @example
- * const countRx = Rx.make(0)
- * const setCount = createRxSet(countRx)
- * 
+ * const countAtom = Atom.make(0)
+ * const setCount = createAtomSet(countAtom)
+ *
  * setCount(n => n + 1)
  * setCount(42)
  */
-export const createRxSet = <R, W>(rx: Rx.Writable<R, W>) => {
+export const createAtomSet = <R, W>(atom: Atom.Writable<R, W>) => {
   const registry = useContext(RegistryContext)
-  mountRx(registry, rx)
+  mountAtom(registry, atom)
 
   return (value: W | ((_: R) => W)) => {
-    if (typeof value === "function") {
-      registry.set(rx, (value as any)(registry.get(rx)))
+    if (typeof value === 'function') {
+      registry.set(atom, (value as any)(registry.get(atom)))
     } else {
-      registry.set(rx, value)
+      registry.set(atom, value)
     }
   }
 }
 
 /**
- * Create a reactive getter/setter pair for a writable Rx value.
- * Similar to createSignal but for Effect-RX values.
- * 
+ * Create a reactive getter/setter pair for a writable Atom value.
+ * Similar to createSignal but for Effect-Atom values.
+ *
  * @example
- * const countRx = Rx.make(0)
- * const [count, setCount] = createRx(countRx)
- * 
+ * const countAtom = Atom.make(0)
+ * const [count, setCount] = createAtom(countAtom)
+ *
  * setCount(n => n + 1) // updater function
  * setCount(42)         // direct value
  */
-export const createRx = <R, W>(
-  rx: Rx.Writable<R, W>
+export const createAtom = <R, W>(
+  atom: Atom.Writable<R, W>,
 ): readonly [Accessor<R>, (_: W | ((_: R) => W)) => void] => {
   const registry = useContext(RegistryContext)
-  const value = useStore(registry, rx)
+  const value = useStore(registry, atom)
 
   const setter = (newValue: W | ((_: R) => W)) => {
-    if (typeof newValue === "function") {
-      registry.set(rx, (newValue as any)(registry.get(rx)))
+    if (typeof newValue === 'function') {
+      registry.set(atom, (newValue as any)(registry.get(atom)))
     } else {
-      registry.set(rx, newValue)
+      registry.set(atom, newValue)
     }
   }
 
@@ -263,107 +271,113 @@ export const createRx = <R, W>(
 }
 
 /**
- * Create a Resource-based setter for async Rx values.
+ * Create a Resource-based setter for async Atom values.
  * This provides SolidJS Resource integration for async operations.
- * 
+ *
  * @example
- * const todoRx = Rx.make(todoEffect)
- * const { resource, set, refetch } = createRxResourceSet(todoRx)
- * 
+ * const todoAtom = Atom.make(todoEffect)
+ * const { resource, set, refetch } = createAtomResourceSet(todoAtom)
+ *
  * // Trigger async operation
  * set(newTodoData)
  */
-export const createRxResourceSet = <E, A, W = Result.Result<A,E>>(
-  rx: Rx.Writable<Result.Result<A, E>, W>
+export const createAtomResourceSet = <E, A, W = Result.Result<A, E>>(
+  atom: Atom.Writable<Result.Result<A, E>, W>,
 ) => {
   const registry = useContext(RegistryContext)
 
   const fetcher = async (value: W) => {
-    return new Promise<Exit.Exit<A, E>>((resolve) => {
-      const unsubscribe = registry.subscribe(rx, (result) => {
-        if (result.waiting || result._tag === "Initial") return
-        unsubscribe()
-        resolve(Result.toExit(result) as Exit.Exit<A, E>)
-      }, { immediate: true })
-      registry.set(rx, value)
+    return new Promise<Exit.Exit<A, E>>(resolve => {
+      const unsubscribe = registry.subscribe(
+        atom,
+        result => {
+          if (result.waiting || result._tag === 'Initial') return
+          unsubscribe()
+          resolve(Result.toExit(result) as Exit.Exit<A, E>)
+        },
+        { immediate: true },
+      )
+      registry.set(atom, value)
     })
   }
 
   const [resource, { mutate, refetch }] = createResource<Exit.Exit<A, E>, W>(
-    () => registry.get(rx) as W, 
-    fetcher
+    () => registry.get(atom) as W,
+    fetcher,
   )
 
   return {
     resource,
     set: mutate,
-    refetch
+    refetch,
   }
 }
 
 /**
- * Create a SolidJS Resource from an Effect-RX Result.
+ * Create a SolidJS Resource from an Effect-Atom Result.
  * This provides native SolidJS async handling with Suspense support.
- * 
+ *
  * @example
- * const todosRx = Rx.make(todoEffect)
- * const todos = createRxResource(todosRx)
- * 
+ * const todosAtom = Atom.make(todoEffect)
+ * const todos = createAtomResource(todosAtom)
+ *
  * return (
  *   <Suspense fallback="Loading...">
  *     <div>{todos()?.value}</div>
  *   </Suspense>
  * )
  */
-export const createRxResource = <A, E>(
-  rx: Rx.Rx<Result.Result<A, E>>,
-  options?: { readonly suspendOnWaiting?: boolean }
+export const createAtomResource = <A, E>(
+  atom: Atom.Atom<Result.Result<A, E>>,
+  options?: { readonly suspendOnWaiting?: boolean },
 ): Resource<Result.Success<A, E> | Result.Failure<A, E>> => {
   const registry = useContext(RegistryContext)
 
   const fetcher = () => {
-    const currentValue = registry.get(rx)
-    
+    const currentValue = registry.get(atom)
+
     // Return resolved values immediately
-    if (currentValue._tag !== "Initial" && 
-        !(options?.suspendOnWaiting && currentValue.waiting)) {
+    if (currentValue._tag !== 'Initial' && !(options?.suspendOnWaiting && currentValue.waiting)) {
       return currentValue as Result.Success<A, E> | Result.Failure<A, E>
     }
 
     // Create promise for unresolved values
-    return new Promise<Result.Success<A, E> | Result.Failure<A, E>>((resolve) => {
-      const unsubscribe = registry.subscribe(rx, (result) => {
-        if (result._tag === "Initial" ||
-          (options?.suspendOnWaiting && result.waiting)) {
-          return
-        }
-        unsubscribe()
-        resolve(result as Result.Success<A, E> | Result.Failure<A, E>)
-      }, { immediate: false })
+    return new Promise<Result.Success<A, E> | Result.Failure<A, E>>(resolve => {
+      const unsubscribe = registry.subscribe(
+        atom,
+        result => {
+          if (result._tag === 'Initial' || (options?.suspendOnWaiting && result.waiting)) {
+            return
+          }
+          unsubscribe()
+          resolve(result as Result.Success<A, E> | Result.Failure<A, E>)
+        },
+        { immediate: false },
+      )
     })
   }
 
   const [resource, { mutate }] = createResource(fetcher)
-  
-  // Keep resource in sync with Rx updates
-  const unsubscribe = registry.subscribe(rx, (result) => {
+
+  // Keep resource in sync with Atom updates
+  const unsubscribe = registry.subscribe(atom, result => {
     if (Result.isNotInitial(result) && !(options?.suspendOnWaiting && result.waiting)) {
       mutate(() => result as Result.Success<A, E> | Result.Failure<A, E>)
     }
   })
-  
+
   onCleanup(unsubscribe)
-  
+
   return resource
 }
 
 /**
  * Create a SolidJS Resource that only returns success values.
  * Failures are thrown as errors for ErrorBoundary to catch.
- * 
+ *
  * @example
- * const todos = createRxResourceSuccess(todosRx)
- * 
+ * const todos = createAtomResourceSuccess(todosAtom)
+ *
  * return (
  *   <ErrorBoundary fallback="Error loading">
  *     <Suspense fallback="Loading...">
@@ -372,15 +386,15 @@ export const createRxResource = <A, E>(
  *   </ErrorBoundary>
  * )
  */
-export const createRxResourceSuccess = <A, E>(
-  rx: Rx.Rx<Result.Result<A, E>>,
-  options?: { readonly suspendOnWaiting?: boolean }
+export const createAtomResourceSuccess = <A, E>(
+  atom: Atom.Atom<Result.Result<A, E>>,
+  options?: { readonly suspendOnWaiting?: boolean },
 ): Resource<Result.Success<A, E>> => {
-  const resource = createRxResource(rx, options)
+  const resource = createAtomResource(atom, options)
 
   const successResource = () => {
     const result = resource()
-    if (result && result._tag === "Failure") {
+    if (result && result._tag === 'Failure') {
       throw Cause.squash(result.cause)
     }
     return result as Result.Success<A, E>
@@ -389,45 +403,44 @@ export const createRxResourceSuccess = <A, E>(
   return successResource as Resource<Result.Success<A, E>>
 }
 
-// For complex async patterns, use solid-query or build on top of createRxResource
-// This keeps rx-solid focused on core primitives
-
+// For complex async patterns, use solid-query or build on top of createAtomResource
+// This keeps atom-solid focused on core primitives
 
 /**
- * Create a refresh function for an Rx value.
- * This forces the Rx to re-evaluate, useful for manual cache invalidation.
+ * Create a refresh function for an Atom value.
+ * This forces the Atom to re-evaluate, useful for manual cache invalidation.
  */
-export const createRxRefresh = <A>(rx: Rx.Rx<A>): () => void => {
+export const createAtomRefresh = <A>(atom: Atom.Atom<A>): (() => void) => {
   const registry = useContext(RegistryContext)
-  mountRx(registry, rx)
-  return () => registry.refresh(rx)
+  mountAtom(registry, atom)
+  return () => registry.refresh(atom)
 }
 
 /**
- * Subscribe to an Rx value with a callback function.
+ * Subscribe to an Atom value with a callback function.
  * The subscription is automatically cleaned up when the component unmounts.
- * 
+ *
  * @example
- * const count = Rx.make(0)
- * createRxSubscribe(count, (value) => {
+ * const count = Atom.make(0)
+ * createAtomSubscribe(count, (value) => {
  *   console.log('Count changed:', value)
  * }, { immediate: true })
  */
-export const createRxSubscribe = <A>(
-  rx: Rx.Rx<A>,
+export const createAtomSubscribe = <A>(
+  atom: Atom.Atom<A>,
   fn: (_: A) => void,
-  options?: { readonly immediate?: boolean }
+  options?: { readonly immediate?: boolean },
 ): void => {
   const registry = useContext(RegistryContext)
-  const unsubscribe = registry.subscribe(rx, fn, options)
+  const unsubscribe = registry.subscribe(atom, fn, options)
   onCleanup(unsubscribe)
 }
 
 /**
- * Create a SolidJS Accessor from an RxRef.
- * RxRef is Effect-RX's way of handling references to reactive values.
+ * Create a SolidJS Accessor from an AtomRef.
+ * AtomRef is Effect-Atom's way of handling references to reactive values.
  */
-export const createRxRef = <A>(ref: RxRef.ReadonlyRef<A>): Accessor<A> => {
+export const createAtomRef = <A>(ref: AtomRef.ReadonlyRef<A>): Accessor<A> => {
   const [value, setValue] = createSignal(ref.value)
 
   const unsubscribe = ref.subscribe(setValue)
@@ -437,20 +450,19 @@ export const createRxRef = <A>(ref: RxRef.ReadonlyRef<A>): Accessor<A> => {
 }
 
 /**
- * Create a derived RxRef that focuses on a specific property.
+ * Create a derived AtomRef that focuses on a specific property.
  * Uses SolidJS createMemo for optimal performance.
  */
-export const createRxRefProp = <A, K extends keyof A>(
-  ref: RxRef.RxRef<A>,
-  prop: K
-): RxRef.RxRef<A[K]> => createMemo(() => ref.prop(prop))()
+export const createAtomRefProp = <A, K extends keyof A>(
+  ref: AtomRef.AtomRef<A>,
+  prop: K,
+): AtomRef.AtomRef<A[K]> => createMemo(() => ref.prop(prop))()
 
 /**
- * Create an Accessor for a specific property of an RxRef.
- * Combines createRxRefProp and createRxRef for convenience.
+ * Create an Accessor for a specific property of an AtomRef.
+ * Combines createAtomRefProp and createAtomRef for convenience.
  */
-export const createRxRefPropValue = <A, K extends keyof A>(
-  ref: RxRef.RxRef<A>,
-  prop: K
-): Accessor<A[K]> => createRxRef(createRxRefProp(ref, prop))
-
+export const createAtomRefPropValue = <A, K extends keyof A>(
+  ref: AtomRef.AtomRef<A>,
+  prop: K,
+): Accessor<A[K]> => createAtomRef(createAtomRefProp(ref, prop))

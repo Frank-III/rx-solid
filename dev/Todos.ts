@@ -1,4 +1,4 @@
-import { Rx } from '../src'
+import { Atom } from '../src'
 import {
   FetchHttpClient,
   HttpClient,
@@ -53,9 +53,9 @@ export class Todos extends Effect.Service<Todos>()('Todos', {
   dependencies: [FetchHttpClient.layer],
 }) {}
 
-const todosRuntime = Rx.runtime(Todos.Default)
+const todosRuntime = Atom.runtime(Todos.Default)
 
-export const perPage = Rx.make(5)
+export const perPage = Atom.make(5)
 
 export const stream = todosRuntime.pull(
   get =>
@@ -69,9 +69,9 @@ export const stream = todosRuntime.pull(
   // ),
 )
 
-export const effect = todosRuntime.rx(Todos.pipe(Effect.flatMap(_ => _.effect)))
+export const effect = todosRuntime.atom(Todos.pipe(Effect.flatMap(_ => _.effect)))
 
-export const streamIsDone = Rx.make(get => {
+export const streamIsDone = Atom.make(get => {
   const r = get(stream)
   return r._tag === 'Success' && r.value.done
 })

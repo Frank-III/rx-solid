@@ -1,17 +1,17 @@
 {
-  "name": "rx-solid",
-  "version": "0.0.9",
-  "description": "effect-rx for solid",
+  "name": "atom-solid",
+  "version": "0.0.1",
+  "description": "effect-atom for solid",
   "license": "MIT",
   "author": "frank-iii",
   "contributors": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/frank-iii/rx-solid.git"
+    "url": "git+https://github.com/frank-iii/atom-solid.git"
   },
-  "homepage": "https://github.com/frank-iii/rx-solid#readme",
+  "homepage": "https://github.com/frank-iii/atom-solid#readme",
   "bugs": {
-    "url": "https://github.com/frank-iii/rx-solid/issues"
+    "url": "https://github.com/frank-iii/atom-solid/issues"
   },
   "files": [
     "dist"
@@ -79,10 +79,10 @@
   "devDependencies": {
     "@effect/platform": "^0.90.0",
     "@effect/platform-browser": "^0.70.0",
-    "@types/node": "^24.1.0",
+    "@types/node": "^24.2.0",
     "@types/scheduler": "^0.26.0",
-    "@typescript-eslint/eslint-plugin": "^8.38.0",
-    "@typescript-eslint/parser": "^8.38.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
     "concurrently": "^9.2.0",
     "esbuild": "^0.25.8",
     "esbuild-plugin-solid": "^0.6.0",
@@ -91,11 +91,11 @@
     "eslint-plugin-no-only-tests": "^3.3.0",
     "jsdom": "^26.1.0",
     "prettier": "3.6.2",
-    "solid-js": "^1.9.7",
+    "solid-js": "^1.9.8",
     "tsup": "^8.5.0",
     "tsup-preset-solid": "^2.2.0",
-    "typescript": "^5.8.3",
-    "vite": "^7.0.6",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.0",
     "vite-plugin-solid": "^2.11.8",
     "vitest": "^3.2.4"
   },
@@ -108,8 +108,8 @@
     "pnpm": ">=9.0.0"
   },
   "dependencies": {
-    "@effect-rx/rx": "^0.47.5",
-    "effect": "^3.17.3",
+    "@effect-atom/atom": "^0.1.0",
+    "effect": "^3.17.6",
     "scheduler": "^0.26.0"
   }
 }

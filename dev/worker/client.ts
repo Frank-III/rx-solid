@@ -3,7 +3,7 @@ import * as BrowserWorker from '@effect/platform-browser/BrowserWorker'
 import { GetId, InitialMessage, Requests } from './schema'
 import { Array, Context, Effect, Layer } from 'effect'
 import TestWorker from './worker?worker'
-import { Rx } from '../../src'
+import { Atom } from '../../src'
 
 const makePool = Worker.makePoolSerialized<Requests>({
   initialMessage: () => new InitialMessage(),
@@ -20,12 +20,12 @@ export class Pool extends Context.Tag('app/Pool')<Pool, Effect.Effect.Success<ty
   )
 }
 
-// rx
+// atom
 
-const runtime = Rx.runtime(Pool.Live)
+const runtime = Atom.runtime(Pool.Live)
 
-export const getIdRx = runtime.fn((id: string) => {
-  console.log('getIdRx', id)
+export const getIdAtom = runtime.fn((id: string) => {
+  console.log('getIdAtom', id)
   return Pool.pipe(
     Effect.flatMap(pool =>
       Effect.forEach(
@@ -34,7 +34,7 @@ export const getIdRx = runtime.fn((id: string) => {
           pool.executeEffect(new GetId({ id: id.toString() })).pipe(
             Effect.tap(Effect.log),
             Effect.annotateLogs({
-              rx: 'getIdRx',
+              atom: 'getIdAtom',
               id,
             }),
           ),
