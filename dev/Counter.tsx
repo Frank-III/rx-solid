@@ -1,11 +1,11 @@
-import { createRx, createRxValue, createRxMemo, Rx } from 'src'
+import { createAtom, createAtomValue, createAtomMemo, Atom } from 'src'
 
-const count = Rx.make(0)
+const count = Atom.make(0)
 
 export const Counter = () => {
-  const [cntVal, setCount] = createRx(count)
-  const doubleCnt = createRxValue(count, v => v * 2)
-  const tripleCntStr = createRxMemo(count, v => String(v * 3))
+  const [cntVal, setCount] = createAtom(count)
+  const doubleCnt = createAtomValue(count, v => v * 2)
+  const tripleCntStr = createAtomMemo(count, v => String(v * 3))
 
   return (
     <div>

@@ -1,28 +1,28 @@
 import {
-  createRx,
-  createRxSet,
-  createRxResource,
-  createRxValue,
-  createRxMemo,
-  createRxEffect,
+  createAtom,
+  createAtomSet,
+  createAtomResource,
+  createAtomValue,
+  createAtomMemo,
+  createAtomEffect,
   RegistryContext,
   Registry,
 } from '../src'
 import { RegistryProvider } from '../src/components'
 import { For, Show, Suspense, createSignal } from 'solid-js'
 import * as Todos from './Todos'
-import { getIdRx } from './worker/client'
+import { getIdAtom } from './worker/client'
 import { Counter } from './Counter'
 import { HydrationExample } from './HydrationExample'
 
 const PrimitivesShowcase = () => {
   // Showcase the new SolidJS-native primitives
-  const [count, setCount] = createRx(Todos.perPage)
-  const doubled = createRxMemo(Todos.perPage, n => n * 2)
-  const tripled = createRxValue(Todos.perPage, n => n * 3)
+  const [count, setCount] = createAtom(Todos.perPage)
+  const doubled = createAtomMemo(Todos.perPage, n => n * 2)
+  const tripled = createAtomValue(Todos.perPage, n => n * 3)
 
-  // Demonstrate createRxEffect for side effects
-  createRxEffect(Todos.perPage, value => {
+  // Demonstrate createAtomEffect for side effects
+  createAtomEffect(Todos.perPage, value => {
     console.log('🔄 Per page changed to:', value)
   })
 
@@ -45,7 +45,7 @@ const PrimitivesShowcase = () => {
         }}
       >
         <div style={{ padding: '10px', 'background-color': 'white', 'border-radius': '6px' }}>
-          <h4>🔢 createRx</h4>
+          <h4>🔢 createAtom</h4>
           <p>
             Value: <strong>{count()}</strong>
           </p>
@@ -56,7 +56,7 @@ const PrimitivesShowcase = () => {
         </div>
 
         <div style={{ padding: '10px', 'background-color': 'white', 'border-radius': '6px' }}>
-          <h4>🧠 createRxMemo</h4>
+          <h4>🧠 createAtomMemo</h4>
           <p>
             Doubled: <strong>{doubled()}</strong>
           </p>
@@ -64,7 +64,7 @@ const PrimitivesShowcase = () => {
         </div>
 
         <div style={{ padding: '10px', 'background-color': 'white', 'border-radius': '6px' }}>
-          <h4>🔄 createRxValue</h4>
+          <h4>🔄 createAtomValue</h4>
           <p>
             Tripled: <strong>{tripled()}</strong>
           </p>
@@ -72,7 +72,7 @@ const PrimitivesShowcase = () => {
         </div>
 
         <div style={{ padding: '10px', 'background-color': 'white', 'border-radius': '6px' }}>
-          <h4>⚙️ createRxEffect</h4>
+          <h4>⚙️ createAtomEffect</h4>
           <p>Side effects active</p>
           <small>Check console for logs</small>
         </div>
@@ -90,8 +90,8 @@ export default function App() {
   return (
     <RegistryProvider registry={registry}>
       <div style={{ padding: '20px' }}>
-        <h1>🚀 rx-solid: SolidJS-Native Primitives</h1>
-        <p>Clean, focused primitives for Effect-RX integration with SolidJS</p>
+        <h1>🚀 atom-solid: SolidJS-Native Primitives</h1>
+        <p>Clean, focused primitives for Effect-Atom integration with SolidJS</p>
 
         {/* New Primitives Showcase */}
         <PrimitivesShowcase />
@@ -123,7 +123,7 @@ export default function App() {
 }
 
 const TodoStreamList = () => {
-  const result = createRxValue(Todos.stream)
+  const result = createAtomValue(Todos.stream)
   return (
     <>
       <Show
@@ -144,7 +144,7 @@ const TodoStreamList = () => {
 }
 
 const TodoEffectList = () => {
-  const todos = createRxResource(Todos.effect)
+  const todos = createAtomResource(Todos.effect)
   return (
     <Show
       when={(() => {
@@ -171,8 +171,8 @@ function Todo({ todo }: { readonly todo: Todos.Todo }) {
 }
 
 const PullButton = () => {
-  const pull = createRxSet(Todos.stream)
-  const done = createRxValue(Todos.streamIsDone)
+  const pull = createAtomSet(Todos.stream)
+  const done = createAtomValue(Todos.streamIsDone)
   return (
     <button onClick={() => pull()} disabled={done()}>
       Pull more
@@ -181,7 +181,7 @@ const PullButton = () => {
 }
 
 const PerPageSelect = () => {
-  const [n, set] = createRx(Todos.perPage)
+  const [n, set] = createAtom(Todos.perPage)
   return (
     <label>
       Per page:
@@ -208,6 +208,6 @@ function WorkerWrap() {
 }
 
 function WorkerButton() {
-  const getById = createRxSet(getIdRx)
+  const getById = createAtomSet(getIdAtom)
   return <button onClick={() => getById('123')}>Get ID from worker</button>
 }
